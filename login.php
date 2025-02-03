@@ -28,9 +28,10 @@ include 'connectdb.php';
             $user = mysqli_fetch_assoc($result);
             // Verify password using secure hash comparison
             if (password_verify($password, $user['password'])) {
-              
+              $_SESSION['userid'] = $user['userid'];
               $_SESSION['username'] = $user['username'];
               $_SESSION['user_role'] = $user['role'];
+              $_SESSION['email'] = $user['email'];
               // Redirect based on user role
               if ($user['role'] === 'admin') {
                 header("Location: admindashboard.php");
@@ -107,7 +108,7 @@ include 'connectdb.php';
         <button type="submit">Login</button>
       </form>
       <div class="login-footer">
-        <a href="forgot-password.php" class="forgot-password">Forgot Password?</a>
+        <a href="otppage.php" class="forgot-password">Forgot Password?</a>
         <p>New here? <a href="signup.php">Create an Account</a></p>
       </div>
     </div>

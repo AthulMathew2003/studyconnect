@@ -72,6 +72,9 @@ include 'connectdb.php';
                                 <i class="fas fa-user"></i> Profile
                             </div>
                             <div class="profile-dropdown-item">
+                                <a href="changepassword.php" style="text-decoration: none; color: inherit;"><i class="fas fa-key"></i> Change Password</a>
+                            </div>
+                            <div class="profile-dropdown-item">
                                 <a href="logout.php" style="text-decoration: none; color: inherit;"><i class="fas fa-sign-out-alt"></i> Logout</a>
                             </div>
                         </div>
@@ -86,7 +89,7 @@ include 'connectdb.php';
                     <div class="stat-card">
                         <h3>Total Users</h3>
                         <p><?php 
-                            $query = "SELECT COUNT(*) as total FROM users";
+                            $query = "SELECT COUNT(*) as total FROM users WHERE role != 'admin'";
                             $result = mysqli_query($conn, $query);
                             $data = mysqli_fetch_assoc($result);
                             echo htmlspecialchars($data['total']);
@@ -119,7 +122,7 @@ include 'connectdb.php';
                         </thead>
                         <tbody>
                             <?php
-                            $query = "SELECT * FROM users ORDER BY userid";
+                            $query = "SELECT * FROM users WHERE role != 'admin' ORDER BY userid";
                             $result = mysqli_query($conn, $query);
                             
                             while ($row = mysqli_fetch_assoc($result)) {

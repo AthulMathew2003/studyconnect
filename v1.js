@@ -3,7 +3,7 @@ const form = document.getElementById("form");
 
 // Regular expressions for validation
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordRegex = /^.{6}$/;
+const passwordRegex = /^.{6,12}$/;
 const nameRegex = /^[A-Za-z\s]+$/; // New regex for name validation
 
 // Function to show error
@@ -35,7 +35,7 @@ const validatePassword = (password) => {
     return "Password is required";
   }
   if (!passwordRegex.test(password)) {
-    return "Password must be exactly 6 characters";
+    return "Password must be between 6 and 12 characters";
   }
   return "";
 };

@@ -1,11 +1,19 @@
 <?php
 session_start();
+
+// Clear all session variables
 $_SESSION = array();
+session_unset();
+
+// Destroy the session
 session_destroy();
 
-// Debug
-error_log("Session destroyed and redirecting to login.php");
-
-header("Location: login.php");
-exit();
+// Ensure there's no output before redirect
+if (!headers_sent()) {
+    header("Location: login.php");
+    exit();
+} else {
+    echo '<script>window.location.href="login.php";</script>';
+    exit();
+}
 ?>
