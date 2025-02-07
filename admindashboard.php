@@ -72,7 +72,7 @@ include 'connectdb.php';
                                 <i class="fas fa-user"></i> Profile
                             </div>
                             <div class="profile-dropdown-item">
-                                <a href="changepassword.php" style="text-decoration: none; color: inherit;"><i class="fas fa-key"></i> Change Password</a>
+                                <a href="confirmpassword.php" style="text-decoration: none; color: inherit;"><i class="fas fa-key"></i> Change Password</a>
                             </div>
                             <div class="profile-dropdown-item">
                                 <a href="logout.php" style="text-decoration: none; color: inherit;"><i class="fas fa-sign-out-alt"></i> Logout</a>

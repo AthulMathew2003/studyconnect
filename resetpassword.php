@@ -56,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Forgot Password</title>
     <link rel="stylesheet" href="style.css" />
-    <script type="text/javascript" src="v1.js" defer></script>
+    <script type="text/javascript" src="v2.js" defer></script>
   </head>
   <body>
     <div class="wrapper">
