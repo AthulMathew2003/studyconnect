@@ -2,6 +2,14 @@
 include 'connectdb.php';
 session_start();
 
+// Check if profile_photo column exists in tbl_tutors
+$check_column_sql = "SHOW COLUMNS FROM tbl_tutors LIKE 'profile_photo'";
+$column_result = mysqli_query($conn, $check_column_sql);
+if (mysqli_num_rows($column_result) == 0) {
+    $add_column_sql = "ALTER TABLE tbl_tutors ADD COLUMN profile_photo VARCHAR(255)";
+    mysqli_query($conn, $add_column_sql);
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $response = array('success' => false, 'message' => '');
@@ -24,6 +32,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Sanitize and validate input
     $userid = $_SESSION['userid'] ?? 0;
+    
+    // Handle profile photo upload
+    $profile_photo = null;
+    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['profile_photo'];
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if (!in_array($file['type'], $allowed_types)) {
+            $response['message'] = 'Invalid file type. Only JPG, PNG and GIF are allowed.';
+            echo json_encode($response);
+            exit;
+        }
+        
+        // Create profilepic directory if it doesn't exist
+        if (!file_exists('profilepic')) {
+            mkdir('profilepic', 0777, true);
+        }
+        
+        // Delete old profile photo if exists
+        if ($tutor_exists) {
+            $old_photo_sql = "SELECT profile_photo FROM tbl_tutors WHERE userid = '$userid'";
+            $old_photo_result = mysqli_query($conn, $old_photo_sql);
+            $old_photo = mysqli_fetch_assoc($old_photo_result);
+            if ($old_photo && $old_photo['profile_photo']) {
+                $old_photo_path = 'profilepic/' . $old_photo['profile_photo'];
+                if (file_exists($old_photo_path)) {
+                    unlink($old_photo_path);
+                }
+            }
+        }
+        
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'profile_' . $userid . '_' . time() . '.' . $extension;
+        $target_path = 'profilepic/' . $filename;
+        
+        if (move_uploaded_file($file['tmp_name'], $target_path)) {
+            $profile_photo = $filename;
+        } else {
+            $response['message'] = 'Failed to upload profile photo';
+            echo json_encode($response);
+            exit;
+        }
+    }
+    
     $mobile = mysqli_real_escape_string($conn, $_POST['mobile']);
     $age = intval($_POST['age']);
     $qualification = mysqli_real_escape_string($conn, $_POST['qualification']);
@@ -67,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($tutor_exists) {
             // Update existing tutor
+            $photo_update = $profile_photo ? ", profile_photo = '$profile_photo'" : "";
             $update_sql = "UPDATE tbl_tutors SET 
                           mobile = '$mobile', 
                           age = $age, 
@@ -74,17 +128,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           teaching_mode = '$teaching_mode', 
                           experience = $experience, 
                           hourly_rate = $hourly_rate, 
-                          about = '$about' 
+                          about = '$about'
+                          $photo_update 
                           WHERE userid = '$userid'";
             mysqli_query($conn, $update_sql);
             
             $tutor_id = $tutor_exists['tutor_id'];
         } else {
             // Insert new tutor
+            $photo_field = $profile_photo ? ", profile_photo" : "";
+            $photo_value = $profile_photo ? ", '$profile_photo'" : "";
             $insert_sql = "INSERT INTO tbl_tutors (userid, mobile, age, qualification, 
-                          teaching_mode, experience, hourly_rate, about) 
+                          teaching_mode, experience, hourly_rate, about$photo_field) 
                           VALUES ('$userid', '$mobile', $age, '$qualification', 
-                          '$teaching_mode', $experience, $hourly_rate, '$about')";
+                          '$teaching_mode', $experience, $hourly_rate, '$about'$photo_value)";
             mysqli_query($conn, $insert_sql);
             
             $tutor_id = mysqli_insert_id($conn);
@@ -178,6 +235,10 @@ if ($tutor) {
     $pincode = '';
     $tutor_subjects = array();
 }
+
+// Set default profile image if none exists
+$profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['profile_photo'] : '/api/placeholder/150/150';
+
 ?>
 
 <!DOCTYPE html>
@@ -589,7 +650,7 @@ if ($tutor) {
             <div class="profile-header">
                 <div class="profile-flex">
                     <div class="profile-image-container">
-                        <img id="profile-image-preview" src="/api/placeholder/150/150" alt="Profile Photo" class="profile-image">
+                        <img id="profile-image-preview" src="<?php echo htmlspecialchars($profile_image); ?>" alt="Profile Photo" class="profile-image">
                         <label for="profile_photo" class="profile-image-overlay">
                             <span>Change Photo</span>
                         </label>
@@ -888,6 +949,32 @@ if ($tutor) {
                 }
             });
 
+            // Handle profile photo preview
+            $('#profile_photo').on('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                    
+                    if (!allowedTypes.includes(file.type)) {
+                        showNotification('Invalid file type. Only JPG, PNG and GIF are allowed.', 'error');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (file.size > 5 * 1024 * 1024) { // 5MB
+                        showNotification('File is too large. Maximum size is 5MB.', 'error');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#profile-image-preview').attr('src', e.target.result);
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
             // Check if profile is complete
             function isProfileComplete() {
                 const requiredFields = {
@@ -968,12 +1055,18 @@ if ($tutor) {
                 // Get form data
                 const formData = new FormData($('#profile-form')[0]);
                 
-                // Add the subjects array
+                // Add the subjects array and profile photo
                 const subjects = $('#subjects').val();
                 if (subjects) {
                     subjects.forEach(subject => {
                         formData.append('subjects[]', subject);
                     });
+                }
+                
+                // Add profile photo if selected
+                const profilePhotoInput = $('#profile_photo')[0];
+                if (profilePhotoInput.files.length > 0) {
+                    formData.append('profile_photo', profilePhotoInput.files[0]);
                 }
                 
                 // Send AJAX request
@@ -988,8 +1081,8 @@ if ($tutor) {
                         showNotification(result.message, result.success ? 'success' : 'error');
                         
                         if (result.success) {
-                            // Optionally reload the page after successful update
-                            // setTimeout(() => window.location.reload(), 2000);
+                            // Reload the page after successful update to show new profile photo
+                            setTimeout(() => window.location.reload(), 2000);
                         }
                     },
                     error: function() {
