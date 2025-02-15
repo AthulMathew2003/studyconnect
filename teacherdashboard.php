@@ -1,3 +1,27 @@
+<?php
+session_start();
+// Check if user is logged in
+if (!isset($_SESSION['username'])) {
+  header('Location: login.php');
+  exit();
+}
+include 'connectdb.php';
+$userid = $_SESSION['userid']; // Fixed the syntax error (missing semicolon)
+
+// Check if user exists in tbl_tutor
+$check_tutor = $conn->prepare("SELECT userid FROM tbl_tutors WHERE userid = ?");
+$check_tutor->bind_param("i", $userid);
+$check_tutor->execute();
+$result = $check_tutor->get_result();
+
+if ($result->num_rows == 0) {
+    // User not found in tbl_tutor, redirect to profile setup
+    header('Location: teacherprofile.php');
+    exit();
+}
+$check_tutor->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -582,9 +606,9 @@
             <div class="profile-dropdown">
               <img src="1.webp" alt="Profile" class="profile-img" />
               <div class="dropdown-menu">
-                <a href="#">Profile</a>
+                <a href="teacherprofile.php">Profile</a>
                 <a href="#">Account</a>
-                <a href="#">Logout</a>
+                <a href="logout.php">Logout</a>
               </div>
             </div>
           </div>
