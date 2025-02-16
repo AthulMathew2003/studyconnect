@@ -619,6 +619,45 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
         #back-button:hover {
             box-shadow: 0 4px 12px rgba(110, 127, 243, 0.3);
         }
+        
+        .spinner {
+            animation: rotate 2s linear infinite;
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+        }
+        
+        .spinner .path {
+            stroke: #ffffff;
+            stroke-linecap: round;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes rotate {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes dash {
+            0% {
+                stroke-dasharray: 1, 150;
+                stroke-dashoffset: 0;
+            }
+            50% {
+                stroke-dasharray: 90, 150;
+                stroke-dashoffset: -35;
+            }
+            100% {
+                stroke-dasharray: 90, 150;
+                stroke-dashoffset: -124;
+            }
+        }
+        
+        #save-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -1044,13 +1083,21 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
             isProfileComplete();
 
             // Form submission
+            let isSubmitting = false;
             $('#save-button').click(function(e) {
                 e.preventDefault();
+                
+                if (isSubmitting) {
+                    return;
+                }
                 
                 if (!validateForm()) {
                     showNotification('Please correct all errors before submitting', 'error');
                     return;
                 }
+                
+                isSubmitting = true;
+                $(this).prop('disabled', true).html('<svg class="spinner" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle></svg> Saving...');
                 
                 // Get form data
                 const formData = new FormData($('#profile-form')[0]);
@@ -1081,15 +1128,30 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
                         showNotification(result.message, result.success ? 'success' : 'error');
                         
                         if (result.success) {
-                            // Reload the page after successful update to show new profile photo
+                            // Reload the page after successful update
                             setTimeout(() => window.location.reload(), 2000);
+                        } else {
+                            resetSubmitButton();
                         }
                     },
                     error: function() {
                         showNotification('An error occurred while saving changes', 'error');
+                        resetSubmitButton();
                     }
                 });
             });
+
+            function resetSubmitButton() {
+                isSubmitting = false;
+                $('#save-button').prop('disabled', false).html(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Save Changes
+                `);
+            }
 
             // Show notification
             function showNotification(message, type) {
@@ -1112,27 +1174,66 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
             function validateForm() {
                 let isValid = true;
                 
-                // Trigger validation on all fields
-                $('#age').trigger('input');
-                $('#experience').trigger('input');
-                $('#hourly_rate').trigger('input');
-                $('#mobile').trigger('input');
-                $('#pincode').trigger('input');
-                $('#city').trigger('input');
-                $('#state').trigger('input');
-                $('#country').trigger('input');
-                $('#about').trigger('input');
-                $('#qualification').trigger('change');
-                $('#teaching_mode').trigger('change');
-                $('#subjects').trigger('change');
+                // Clear all previous errors
+                $('.error-message').removeClass('show');
+                $('input, select, textarea').removeClass('error');
+                $('.select2-container').removeClass('error');
                 
-                // Check for any error messages
-                if ($('.error-message.show').length > 0) {
+                // Validate required fields
+                const requiredFields = {
+                    mobile: /^[0-9]{10}$/,
+                    age: value => parseInt(value) >= 18 && parseInt(value) <= 90,
+                    qualification: value => value.length > 0,
+                    teaching_mode: value => value.length > 0,
+                    experience: value => {
+                        const exp = parseInt(value);
+                        const age = parseInt($('#age').val());
+                        return exp >= 0 && exp <= (age - 18);
+                    },
+                    hourly_rate: value => {
+                        const rate = parseFloat(value);
+                        return rate > 0 && rate <= 1000;
+                    },
+                    about: value => value.length >= 50 && value.length <= 500,
+                    pincode: /^[0-9]{6}$/,
+                    city: /^[a-zA-Z\s]{2,50}$/,
+                    state: /^[a-zA-Z\s]{2,50}$/,
+                    country: /^[a-zA-Z\s]{2,50}$/
+                };
+                
+                for (const [field, validator] of Object.entries(requiredFields)) {
+                    const $field = $(`#${field}`);
+                    const value = $field.val();
+                    
+                    if (validator instanceof RegExp) {
+                        if (!validator.test(value)) {
+                            showFieldError($field, `Please enter a valid ${field.replace('_', ' ')}`);
+                            isValid = false;
+                        }
+                    } else {
+                        if (!validator(value)) {
+                            showFieldError($field, `Please enter a valid ${field.replace('_', ' ')}`);
+                            isValid = false;
+                        }
+                    }
+                }
+                
+                // Validate subjects
+                const subjects = $('#subjects').val();
+                if (!subjects || subjects.length === 0) {
+                    showFieldError($('#subjects'), 'Please select at least one subject');
+                    $('#subjects').next('.select2-container').addClass('error');
                     isValid = false;
                 }
                 
                 return isValid;
             }
+
+            // Run initial validation on page load
+            $(window).on('load', function() {
+                validateForm();
+                isProfileComplete();
+            });
         });
     </script>
 </body>
