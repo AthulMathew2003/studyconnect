@@ -37,7 +37,7 @@ include 'connectdb.php';
                 </li>
                 <li class="sidebar-nav-item" data-view="reports">
                     <i class="fas fa-chart-bar"></i>
-                    <span>Reports</span>
+                    <span>Add Data</span>
                 </li>
                 <li class="sidebar-nav-item" data-view="settings">
                     <i class="fas fa-cog"></i>
@@ -137,9 +137,30 @@ include 'connectdb.php';
                         </tbody>
                     </table>
                 </div>
+
+                <div id="reports-view" style="display: none;">
+                    <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h2 style="margin-bottom: 2rem;">Add New Data</h2>
+                        <form id="addDataForm" method="POST">
+                            <div style="margin-bottom: 1.5rem;">
+                                <label for="dataType" style="display: block; margin-bottom: 0.5rem;">Select Data Type</label>
+                                <select id="dataType" name="dataType" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option value="">Choose type...</option>
+                                    <option value="student">Student</option>
+                                    <option value="teacher">Teacher</option>
+                                    <option value="course">Course</option>
+                                </select>
+                            </div>
+                            <div id="dynamicFields">
+                                <!-- Fields will be dynamically added here -->
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 
 </body>
 </html>

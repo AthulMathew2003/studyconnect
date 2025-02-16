@@ -1124,107 +1124,147 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
                     processData: false,
                     contentType: false,
                     success: function(response) {
-                        const result = JSON.parse(response);
-                        showNotification(result.message, result.success ? 'success' : 'error');
-                        
-                        if (result.success) {
-                            // Reload the page after successful update
-                            setTimeout(() => window.location.reload(), 2000);
-                        } else {
-                            resetSubmitButton();
+                        try {
+                            const result = typeof response === 'string' ? JSON.parse(response) : response;
+                            
+                            if (result.success) {
+                                showNotification(result.message, 'success');
+                                // Enable dashboard access if profile is complete
+                                if (isProfileComplete()) {
+                                    $('#back-button').css('opacity', '1').css('pointer-events', 'auto')
+                                                   .attr('title', 'Go back to dashboard');
+                                }
+                            } else {
+                                showNotification(result.message || 'An error occurred while saving', 'error');
+                            }
+                        } catch (e) {
+                            showNotification('An unexpected error occurred', 'error');
+                            console.error('Error parsing response:', e);
                         }
                     },
-                    error: function() {
-                        showNotification('An error occurred while saving changes', 'error');
-                        resetSubmitButton();
+                    error: function(xhr, status, error) {
+                        showNotification('Failed to save changes. Please try again.', 'error');
+                        console.error('AJAX Error:', status, error);
+                    },
+                    complete: function() {
+                        isSubmitting = false;
+                        $('#save-button').prop('disabled', false).html(`
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            Save Changes
+                        `);
                     }
                 });
             });
-
-            function resetSubmitButton() {
-                isSubmitting = false;
-                $('#save-button').prop('disabled', false).html(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                    Save Changes
-                `);
-            }
-
-            // Show notification
+            
+            // Show notification function
             function showNotification(message, type) {
-                const notification = $('<div class="notification ' + type + '">' + message + '</div>');
+                const notification = $('<div>', {
+                    class: `notification ${type}`,
+                    text: message
+                });
+                
                 $('body').append(notification);
-                
-                setTimeout(function() {
-                    notification.addClass('show');
-                }, 100);
-                
-                setTimeout(function() {
+                setTimeout(() => notification.addClass('show'), 100);
+                setTimeout(() => {
                     notification.removeClass('show');
-                    setTimeout(function() {
-                        notification.remove();
-                    }, 300);
+                    setTimeout(() => notification.remove(), 300);
                 }, 3000);
             }
-
-            // Form validation
+            
+            // Validate form function
             function validateForm() {
                 let isValid = true;
+                const errors = [];
                 
                 // Clear all previous errors
                 $('.error-message').removeClass('show');
                 $('input, select, textarea').removeClass('error');
                 $('.select2-container').removeClass('error');
                 
-                // Validate required fields
-                const requiredFields = {
-                    mobile: /^[0-9]{10}$/,
-                    age: value => parseInt(value) >= 18 && parseInt(value) <= 90,
-                    qualification: value => value.length > 0,
-                    teaching_mode: value => value.length > 0,
-                    experience: value => {
-                        const exp = parseInt(value);
-                        const age = parseInt($('#age').val());
-                        return exp >= 0 && exp <= (age - 18);
-                    },
-                    hourly_rate: value => {
-                        const rate = parseFloat(value);
-                        return rate > 0 && rate <= 1000;
-                    },
-                    about: value => value.length >= 50 && value.length <= 500,
-                    pincode: /^[0-9]{6}$/,
-                    city: /^[a-zA-Z\s]{2,50}$/,
-                    state: /^[a-zA-Z\s]{2,50}$/,
-                    country: /^[a-zA-Z\s]{2,50}$/
-                };
+                // Validate mobile number
+                const mobile = $('#mobile').val();
+                if (!/^[0-9]{10}$/.test(mobile)) {
+                    errors.push('Please enter a valid 10-digit mobile number');
+                    showFieldError($('#mobile'), 'Please enter a valid 10-digit mobile number');
+                    isValid = false;
+                }
                 
-                for (const [field, validator] of Object.entries(requiredFields)) {
-                    const $field = $(`#${field}`);
-                    const value = $field.val();
-                    
-                    if (validator instanceof RegExp) {
-                        if (!validator.test(value)) {
-                            showFieldError($field, `Please enter a valid ${field.replace('_', ' ')}`);
-                            isValid = false;
-                        }
-                    } else {
-                        if (!validator(value)) {
-                            showFieldError($field, `Please enter a valid ${field.replace('_', ' ')}`);
-                            isValid = false;
-                        }
-                    }
+                // Validate age
+                const age = parseInt($('#age').val());
+                if (isNaN(age) || age < 18 || age > 90) {
+                    errors.push('Age must be between 18 and 90 years');
+                    showFieldError($('#age'), 'Age must be between 18 and 90 years');
+                    isValid = false;
+                }
+                
+                // Validate qualification
+                if (!$('#qualification').val()) {
+                    errors.push('Please select your qualification');
+                    showFieldError($('#qualification'), 'Please select your qualification');
+                    isValid = false;
+                }
+                
+                // Validate teaching mode
+                if (!$('#teaching_mode').val()) {
+                    errors.push('Please select your teaching mode');
+                    showFieldError($('#teaching_mode'), 'Please select your teaching mode');
+                    isValid = false;
+                }
+                
+                // Validate experience
+                const experience = parseInt($('#experience').val());
+                if (isNaN(experience) || experience < 0 || experience > (age - 18)) {
+                    errors.push('Please enter valid years of experience');
+                    showFieldError($('#experience'), 'Please enter valid years of experience');
+                    isValid = false;
+                }
+                
+                // Validate hourly rate
+                const hourlyRate = parseFloat($('#hourly_rate').val());
+                if (isNaN(hourlyRate) || hourlyRate <= 0 || hourlyRate > 1000) {
+                    errors.push('Hourly rate must be between 0 and 1000');
+                    showFieldError($('#hourly_rate'), 'Hourly rate must be between 0 and 1000');
+                    isValid = false;
                 }
                 
                 // Validate subjects
                 const subjects = $('#subjects').val();
                 if (!subjects || subjects.length === 0) {
-                    showFieldError($('#subjects'), 'Please select at least one subject');
+                    errors.push('Please select at least one subject');
                     $('#subjects').next('.select2-container').addClass('error');
+                    showFieldError($('#subjects'), 'Please select at least one subject');
                     isValid = false;
                 }
+                
+                // Validate about section
+                const about = $('#about').val();
+                if (about.length < 50 || about.length > 500) {
+                    errors.push('About section must be between 50 and 500 characters');
+                    showFieldError($('#about'), 'About section must be between 50 and 500 characters');
+                    isValid = false;
+                }
+                
+                // Validate location fields
+                const pincodeRegex = /^[0-9]{6}$/;
+                const nameRegex = /^[a-zA-Z\s]{2,50}$/;
+                
+                if (!pincodeRegex.test($('#pincode').val())) {
+                    errors.push('Please enter a valid 6-digit pincode');
+                    showFieldError($('#pincode'), 'Please enter a valid 6-digit pincode');
+                    isValid = false;
+                }
+                
+                ['city', 'state', 'country'].forEach(field => {
+                    if (!nameRegex.test($(`#${field}`).val())) {
+                        errors.push(`Please enter a valid ${field} name`);
+                        showFieldError($(`#${field}`), `Please enter a valid ${field} name (2-50 characters, letters only)`);
+                        isValid = false;
+                    }
+                });
                 
                 return isValid;
             }

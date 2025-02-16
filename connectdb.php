@@ -71,4 +71,12 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_tutorsubject (
 )
 ";
 $conn->query($sql);
+$sql="CREATE TABLE IF NOT EXISTS tbl_student (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    userid INT NOT NULL,
+    mobile VARCHAR(15) NOT NULL,
+    mode_of_learning ENUM('Online', 'Offline', 'Both') NOT NULL,
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
+)";
+$conn->query($sql);
 ?>

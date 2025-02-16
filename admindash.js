@@ -14,6 +14,8 @@
     // Get view containers
     const dashboardView = document.getElementById("dashboard-view");
     const usersView = document.getElementById("users-view");
+    const reportsView = document.getElementById("reports-view");
+    const settingsView = document.getElementById("settings-view");
 
     // Profile Dropdown
     profileDropdownTrigger.addEventListener("click", function (event) {
@@ -48,27 +50,42 @@
 
         // Handle view switching
         const view = this.getAttribute("data-view");
+        
+        // Hide all views first
+        if (dashboardView) dashboardView.style.display = "none";
+        if (usersView) usersView.style.display = "none";
+        if (reportsView) reportsView.style.display = "none";
+        if (settingsView) settingsView.style.display = "none";
+
+        // Show the selected view
         switch (view) {
           case "dashboard":
-            dashboardView.style.display = "grid";
-            usersView.style.display = "none";
+            if (dashboardView) dashboardView.style.display = "grid";
             break;
           case "users":
-            dashboardView.style.display = "none";
-            usersView.style.display = "block";
+            if (usersView) usersView.style.display = "block";
             break;
-          // Add more cases for other views as needed
+          case "reports":
+            if (reportsView) reportsView.style.display = "block";
+            break;
+          case "settings":
+            if (settingsView) settingsView.style.display = "block";
+            break;
+        }
+
+        // Update the header text
+        const header = document.querySelector(".navbar-left h1");
+        if (header) {
+          header.textContent = view.charAt(0).toUpperCase() + view.slice(1);
         }
 
         // Close sidebar on mobile after selection
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove("show");
-          sidebarOverlay.classList.remove("show");
-        }
+        sidebar.classList.remove("show");
+        sidebarOverlay.classList.remove("show");
       });
     });
 
-    // Close dropdown if clicked outside
+    // Close profile dropdown when clicking outside
     document.addEventListener("click", function (event) {
       if (!profileDropdownTrigger.contains(event.target)) {
         profileDropdown.classList.remove("show");
