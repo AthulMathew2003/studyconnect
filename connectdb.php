@@ -76,6 +76,7 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_student (
     userid INT NOT NULL,
     mobile VARCHAR(15) NOT NULL,
     mode_of_learning ENUM('Online', 'Offline', 'Both') NOT NULL,
+    profilephoto VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 )";
 $conn->query($sql);

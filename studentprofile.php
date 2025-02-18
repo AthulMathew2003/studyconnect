@@ -19,6 +19,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $state = $_POST['state'];
     $country = $_POST['country'];
 
+    // Handle profile photo upload
+    $profile_photo = null;
+    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        $max_size = 5 * 1024 * 1024; // 5MB
+        
+        if (!in_array($_FILES['profile_photo']['type'], $allowed_types)) {
+            die("Error: Only JPG, PNG and GIF images are allowed.");
+        }
+        
+        if ($_FILES['profile_photo']['size'] > $max_size) {
+            die("Error: File size must be less than 5MB.");
+        }
+        
+        // Create uploads directory if it doesn't exist
+        $upload_dir = 'uploads/profile_photos/';
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        // Generate unique filename
+        $file_extension = pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION);
+        $filename = uniqid('profile_') . '.' . $file_extension;
+        $target_path = $upload_dir . $filename;
+        
+        if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $target_path)) {
+            $profile_photo = $target_path;
+        } else {
+            die("Error: Failed to upload file.");
+        }
+    }
+
     // Start transaction
     $conn->begin_transaction();
     try {
@@ -28,14 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($result_student->num_rows === 0) {
             // Insert new student record
-            $insert_student = "INSERT INTO tbl_student (userid, mobile, mode_of_learning) 
-                             VALUES ($userid, '$mobile', '$learning_mode')";
+            $insert_student = "INSERT INTO tbl_student (userid, mobile, mode_of_learning, profilephoto) 
+                             VALUES ($userid, '$mobile', '$learning_mode', " . ($profile_photo ? "'$profile_photo'" : "NULL") . ")";
             $conn->query($insert_student);
         } else {
             // Update existing student record
+            $update_photo = $profile_photo ? ", profilephoto = '$profile_photo'" : "";
             $update_student = "UPDATE tbl_student 
                              SET mobile = '$mobile', 
                                  mode_of_learning = '$learning_mode'
+                                 $update_photo
                              WHERE userid = $userid";
             $conn->query($update_student);
         }
@@ -78,7 +112,8 @@ $user = $result->fetch_assoc();
 // Initialize default data
 $student_data = array(
     'mobile' => '',
-    'mode_of_learning' => 'Both'
+    'mode_of_learning' => 'Both',
+    'profilephoto' => ''
 );
 
 $location_data = array(
@@ -180,27 +215,28 @@ if ($location_result->num_rows > 0) {
         }
 
         .avatar-container {
-            width: 180px;
-            height: 180px;
+            width: 120px;
+            height: 120px;
             margin: 0 auto 2rem;
             position: relative;
             z-index: 1;
         }
 
         .avatar {
-            width: 100%;
+            width: 500px;
             height: 100%;
             border-radius: 50%;
-            border: 4px solid rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.8);
             background: rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 4rem;
+            font-size: 3rem;
             color: var(--text-primary);
             position: relative;
             overflow: hidden;
             transition: var(--transition);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .avatar::after {
@@ -378,6 +414,8 @@ if ($location_result->num_rows > 0) {
         .avatar-upload {
             position: relative;
             cursor: pointer;
+            display: flex
+;
         }
 
         .avatar-upload input[type="file"] {
@@ -553,7 +591,11 @@ if ($location_result->num_rows > 0) {
             <label class="avatar-container avatar-upload">
                 <input type="file" name="profile_photo" accept="image/*">
                 <div class="avatar">
-                    <i class="fas fa-user"></i>
+                    <?php if (!empty($student_data['profilephoto']) && file_exists($student_data['profilephoto'])): ?>
+                        <img src="<?php echo htmlspecialchars($student_data['profilephoto']); ?>" alt="Profile Photo" style="width: 200px; height: 200px;  border-radius: 50%;">
+                    <?php else: ?>
+                        <i class="fas fa-user" style="opacity: 0.8;"></i>
+                    <?php endif; ?>
                 </div>
             </label>
             <input type="text" name="full_name" class="profile-name" value="<?php echo htmlspecialchars($user['username']); ?>" style="background: none; border: none; text-align: center; width: 100%; margin-bottom: 0.5rem;" readonly>

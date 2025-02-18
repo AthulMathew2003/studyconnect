@@ -1,95 +1,70 @@
-(function () {
-  document.addEventListener("DOMContentLoaded", function () {
-    const profileDropdownTrigger = document.getElementById(
-      "profile-dropdown-trigger"
-    );
-    const profileDropdown = document.getElementById("profile-dropdown");
-    const sidebarToggle = document.getElementById("sidebar-toggle");
-    const sidebar = document.getElementById("sidebar");
-    const sidebarOverlay = document.getElementById("sidebar-overlay");
-    const darkModeToggle = document.getElementById("dark-mode-toggle");
-    const body = document.body;
-    const navItems = document.querySelectorAll(".sidebar-nav-item");
+document.addEventListener('DOMContentLoaded', function() {
+    // Get DOM elements
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const menuItems = document.querySelectorAll('.sidebar-nav-item');
+    const mainContent = document.querySelector('.main-content');
 
-    // Get view containers
-    const dashboardView = document.getElementById("dashboard-view");
-    const usersView = document.getElementById("users-view");
-    const reportsView = document.getElementById("reports-view");
-    const settingsView = document.getElementById("settings-view");
-
-    // Profile Dropdown
-    profileDropdownTrigger.addEventListener("click", function (event) {
-      event.stopPropagation();
-      profileDropdown.classList.toggle("show");
+    // Toggle sidebar on mobile
+    sidebarToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('show');
+        sidebarOverlay.classList.toggle('show');
     });
 
-    // Sidebar Toggle for Mobile
-    sidebarToggle.addEventListener("click", function () {
-      sidebar.classList.toggle("show");
-      sidebarOverlay.classList.toggle("show");
+    // Close sidebar when clicking overlay
+    sidebarOverlay.addEventListener('click', function() {
+        sidebar.classList.remove('show');
+        sidebarOverlay.classList.remove('show');
     });
 
-    // Sidebar Overlay Close
-    sidebarOverlay.addEventListener("click", function () {
-      sidebar.classList.remove("show");
-      sidebarOverlay.classList.remove("show");
+    // Handle menu item clicks
+    menuItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Remove active class from all items
+            menuItems.forEach(menuItem => menuItem.classList.remove('active'));
+            
+            // Add active class to clicked item
+            this.classList.add('active');
+
+            // Get the view to show
+            const viewToShow = this.getAttribute('data-view');
+            
+            // Update page title
+            const pageTitle = document.querySelector('.navbar-left h1');
+            if (pageTitle) {
+                pageTitle.textContent = viewToShow.charAt(0).toUpperCase() + viewToShow.slice(1);
+            }
+
+            // Hide all views
+            const allViews = document.querySelectorAll('[id$="-view"]');
+            allViews.forEach(view => {
+                view.style.display = 'none';
+            });
+
+            // Show selected view with fade effect
+            const selectedView = document.getElementById(viewToShow + '-view');
+            if (selectedView) {
+                selectedView.style.display = 'block';
+                selectedView.style.opacity = '0';
+                selectedView.style.transition = 'opacity 0.3s ease-in-out';
+                
+                setTimeout(() => {
+                    selectedView.style.opacity = '1';
+                }, 50);
+            }
+
+            // Close sidebar on mobile after selection
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            }
+        });
     });
 
-    // Dark Mode Toggle
-    darkModeToggle.addEventListener("click", function () {
-      body.classList.toggle("dark-mode");
-    });
-
-    // Navigation Item Selection
-    navItems.forEach((item) => {
-      item.addEventListener("click", function () {
-        // Remove active class from all items
-        navItems.forEach((nav) => nav.classList.remove("active"));
-        // Add active class to clicked item
-        this.classList.add("active");
-
-        // Handle view switching
-        const view = this.getAttribute("data-view");
-        
-        // Hide all views first
-        if (dashboardView) dashboardView.style.display = "none";
-        if (usersView) usersView.style.display = "none";
-        if (reportsView) reportsView.style.display = "none";
-        if (settingsView) settingsView.style.display = "none";
-
-        // Show the selected view
-        switch (view) {
-          case "dashboard":
-            if (dashboardView) dashboardView.style.display = "grid";
-            break;
-          case "users":
-            if (usersView) usersView.style.display = "block";
-            break;
-          case "reports":
-            if (reportsView) reportsView.style.display = "block";
-            break;
-          case "settings":
-            if (settingsView) settingsView.style.display = "block";
-            break;
-        }
-
-        // Update the header text
-        const header = document.querySelector(".navbar-left h1");
-        if (header) {
-          header.textContent = view.charAt(0).toUpperCase() + view.slice(1);
-        }
-
-        // Close sidebar on mobile after selection
-        sidebar.classList.remove("show");
-        sidebarOverlay.classList.remove("show");
-      });
-    });
-
-    // Close profile dropdown when clicking outside
-    document.addEventListener("click", function (event) {
-      if (!profileDropdownTrigger.contains(event.target)) {
-        profileDropdown.classList.remove("show");
-      }
-    });
-  });
-})();
+    // Initialize dashboard view as active
+    const dashboardView = document.querySelector('[data-view="dashboard"]');
+    if (dashboardView) {
+        dashboardView.click();
+    }
+});

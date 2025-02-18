@@ -138,29 +138,58 @@ include 'connectdb.php';
                     </table>
                 </div>
 
+                <!-- Reports View (Add Data) -->
                 <div id="reports-view" style="display: none;">
-                    <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                        <h2 style="margin-bottom: 2rem;">Add New Data</h2>
-                        <form id="addDataForm" method="POST">
-                            <div style="margin-bottom: 1.5rem;">
-                                <label for="dataType" style="display: block; margin-bottom: 0.5rem;">Select Data Type</label>
-                                <select id="dataType" name="dataType" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
-                                    <option value="">Choose type...</option>
-                                    <option value="student">Student</option>
-                                    <option value="teacher">Teacher</option>
+                    <div class="content-card">
+                        <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Add New Data</h2>
+                        <form id="addDataForm" style="max-width: 600px; margin: 0 auto;">
+                            <div class="form-group">
+                                <label for="dataType">Data Type</label>
+                                <select id="dataType" name="dataType" required>
+                                    <option value="">Select Data Type</option>
                                     <option value="course">Course</option>
+                                    <option value="assignment">Assignment</option>
+                                    <option value="resource">Resource</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="name">Name</label>
+                                <input type="text" id="name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea id="description" name="description" rows="4"></textarea>
                             </div>
                             <div id="dynamicFields">
                                 <!-- Fields will be dynamically added here -->
                             </div>
+                            <button type="submit">Submit</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" style="display: none;">
+                    <div class="content-card">
+                        <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Settings</h2>
+                        <form id="settingsForm" style="max-width: 600px; margin: 0 auto;">
+                            <div class="form-group">
+                                <label for="siteName">Site Name</label>
+                                <input type="text" id="siteName" name="siteName" value="StudyConnect">
+                            </div>
+                            <div class="form-group">
+                                <label for="maintenanceMode">Maintenance Mode</label>
+                                <select id="maintenanceMode" name="maintenanceMode">
+                                    <option value="off">Off</option>
+                                    <option value="on">On</option>
+                                </select>
+                            </div>
+                            <button type="submit">Save Settings</button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
 </body>
 </html>

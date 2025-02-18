@@ -34,7 +34,6 @@ if ($result->num_rows === 0) {
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="assets/logo.png" alt="StudyConnect Logo" class="logo">
                 <h2>StudyConnect</h2>
             </div>
             <nav class="sidebar-nav">
@@ -181,29 +180,7 @@ if ($result->num_rows === 0) {
     </div>
 
     <script>
-        // Initialize Progress Chart
-        const ctx = document.getElementById('progressChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Completed', 'In Progress', 'Not Started'],
-                datasets: [{
-                    data: [65, 25, 10],
-                    backgroundColor: ['#4CAF50', '#2196F3', '#9E9E9E'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
+       
 
         // Profile Dropdown Toggle
         document.querySelector('.user-profile').addEventListener('click', function() {
