@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle menu item clicks
     menuItems.forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function(e) {
+            if (this.id === 'dark-mode-toggle') return; // Skip for dark mode toggle
+
             // Remove active class from all items
             menuItems.forEach(menuItem => menuItem.classList.remove('active'));
             
@@ -42,48 +44,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 view.style.display = 'none';
             });
 
-            // Show selected view with fade effect
+            // Show selected view
             const selectedView = document.getElementById(viewToShow + '-view');
             if (selectedView) {
                 selectedView.style.display = 'block';
-                selectedView.style.opacity = '0';
-                selectedView.style.transition = 'opacity 0.3s ease-in-out';
-                
-                setTimeout(() => {
-                    selectedView.style.opacity = '1';
-                }, 50);
-            }
-
-            // Close sidebar on mobile after selection
-            if (window.innerWidth <= 768) {
-                sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
             }
         });
     });
 
-    // Initialize dashboard view as active
-    const dashboardView = document.querySelector('[data-view="dashboard"]');
-    if (dashboardView) {
-        dashboardView.click();
+    // Handle form submission
+    const addDataForm = document.getElementById('addDataForm');
+    if (addDataForm) {
+        addDataForm.addEventListener('submit', function(e) {
+            const dataType = document.getElementById('dataType').value;
+            const name = document.getElementById('name').value;
+            
+            if (dataType === '' || name.trim() === '') {
+                e.preventDefault();
+                alert('Please fill in all required fields');
+                return;
+            }
+        });
     }
 
-    // Profile dropdown functionality
-    const profileTrigger = document.getElementById('profile-dropdown-trigger');
+    // Handle profile dropdown
+    const profileDropdownTrigger = document.getElementById('profile-dropdown-trigger');
     const profileDropdown = document.getElementById('profile-dropdown');
-
-    if (profileTrigger && profileDropdown) {
-        // Toggle dropdown on click
-        profileTrigger.addEventListener('click', function(e) {
+    
+    if (profileDropdownTrigger && profileDropdown) {
+        profileDropdownTrigger.addEventListener('click', function(e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('show');
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
-            if (!profileTrigger.contains(e.target)) {
+            if (!profileDropdown.contains(e.target) && !profileDropdownTrigger.contains(e.target)) {
                 profileDropdown.classList.remove('show');
             }
         });
+    }
+
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
     }
 });

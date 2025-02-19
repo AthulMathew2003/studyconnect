@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudyConnect - Teacher Requests Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --accent-color: #b3a5ff;
+        --bg-color: #ffffff;
+        --card-bg: #f8f9ff;
+        --text-primary: #2d2d2d;
+        --text-secondary: #666666;
+        --border-color: #e0dbff;
+        --border-radius: 20px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        --glow: 0 0 20px rgba(179, 165, 255, 0.3);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+
+      body {
+        background: var(--bg-color);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+        background-image: radial-gradient(
+            circle at 10% 20%,
+            rgba(179, 165, 255, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 90% 80%,
+            rgba(224, 219, 255, 0.1) 0%,
+            transparent 50%
+          );
+      }
+
+      .dashboard {
+        max-width: 1400px;
+        width: 100%;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        padding: 0 1rem;
+      }
+
+      .header-title {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .header-title h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        position: relative;
+      }
+
+      .header-title h1::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: var(--accent-color);
+        border-radius: 2px;
+      }
+
+      .header-subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+      }
+
+      .new-request-btn {
+        background: var(--accent-color);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        box-shadow: var(--glow);
+      }
+
+      .new-request-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(179, 165, 255, 0.4);
+      }
+
+      .requests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 2rem;
+        padding: 1rem;
+      }
+
+      .request-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .request-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--glow);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .request-id {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: rgba(179, 165, 255, 0.1);
+        color: var(--accent-color);
+        border: 1px solid var(--border-color);
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+      }
+
+      .info-label {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+      }
+
+      .info-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 1rem;
+      }
+
+      .details-section {
+        background: rgba(179, 165, 255, 0.05);
+        border-radius: calc(var(--border-radius) - 4px);
+        padding: 1.25rem;
+        margin-top: 1.5rem;
+        border: 1px solid var(--border-color);
+      }
+
+      .details-title {
+        color: var(--text-primary);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .details-content {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+
+      .timestamp {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        margin-top: 1.5rem;
+        text-align: right;
+        font-style: italic;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 1rem;
+        }
+
+        .header {
+          flex-direction: column;
+          gap: 1rem;
+          text-align: center;
+          padding: 0;
+        }
+
+        .header-title h1 {
+          font-size: 2rem;
+        }
+
+        .header-title h1::after {
+          left: 50%;
+          transform: translateX(-50%);
+        }
+
+        .requests-grid {
+          grid-template-columns: 1fr;
+          padding: 0;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .request-card {
+        animation: fadeInUp 0.5s ease forwards;
+      }
+
+      .request-card:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+
+      .request-card:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard">
+      <header class="header">
+        <div class="header-title">
+          <h1>Teacher Requests</h1>
+          <span class="header-subtitle"
+            >Manage and track your learning journey</span
+          >
+        </div>
+        <a href="#" class="new-request-btn">+ New Request</a>
+      </header>
+
+      <div class="requests-grid" id="requestsContainer">
+        <!-- Sample Request 1 -->
+        <div class="request-card">
+          <div class="card-header">
+            <span class="request-id">REQ-230491</span>
+            <span class="status-badge">Pending</span>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Student Name</span>
+              <span class="info-value">Alex Mitchell</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Subject</span>
+              <span class="info-value">Advanced Physics</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Teaching Mode</span>
+              <span class="info-value">Online</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Budget</span>
+              <span class="info-value">$45/hour</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Availability</span>
+              <span class="info-value">Mon, Wed (Evening)</span>
+            </div>
+          </div>
+
+          <div class="details-section">
+            <div class="details-title">Additional Details</div>
+            <p class="details-content">
+              Looking for help with quantum mechanics and thermodynamics.
+              Preparing for advanced placement exams. Previous experience with
+              calculus-based physics.
+            </p>
+          </div>
+
+          <div class="timestamp">Submitted on Feb 19, 2025 at 10:30 AM</div>
+        </div>
+
+        <!-- Sample Request 2 -->
+        <div class="request-card">
+          <div class="card-header">
+            <span class="request-id">REQ-230492</span>
+            <span class="status-badge">Pending</span>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Student Name</span>
+              <span class="info-value">Sarah Johnson</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Subject</span>
+              <span class="info-value">Web Development</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Teaching Mode</span>
+              <span class="info-value">Online</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Budget</span>
+              <span class="info-value">$55/hour</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Availability</span>
+              <span class="info-value">Weekends</span>
+            </div>
+          </div>
+
+          <div class="details-section">
+            <div class="details-title">Additional Details</div>
+            <p class="details-content">
+              Need guidance with React.js and Node.js for a full-stack project.
+              Familiar with HTML, CSS, and basic JavaScript. Looking to build a
+              portfolio website.
+            </p>
+          </div>
+
+          <div class="timestamp">Submitted on Feb 19, 2025 at 11:45 AM</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

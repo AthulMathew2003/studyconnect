@@ -8,6 +8,7 @@ if (!isset($_SESSION['username'])) {
 }
 include 'connectdb.php';
 
+// Handle form submission for adding new subject
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST['dataType'] === 'course') {
     $subject_name = mysqli_real_escape_string($conn, $_POST['name']);
     
@@ -30,7 +31,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST
             $_SESSION['message_type'] = "error";
         }
     }
+    
+    $_SESSION['active_view'] = 'reports'; // Store the active view in session
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit();
 }
+
+// Handle subject deletion
+if (isset($_POST['delete_subject'])) {
+    $subject_id = mysqli_real_escape_string($conn, $_POST['delete_subject']);
+    
+    $delete_query = "DELETE FROM tbl_subject WHERE subject_id = '$subject_id'";
+    if (mysqli_query($conn, $delete_query)) {
+        $_SESSION['message'] = "Subject deleted successfully!";
+        $_SESSION['message_type'] = "success";
+    } else {
+        $_SESSION['message'] = "Error deleting subject: " . mysqli_error($conn);
+        $_SESSION['message_type'] = "error";
+    }
+    
+    // Redirect to refresh the page
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
+// Get the active view from session or default to dashboard
+$active_view = isset($_SESSION['active_view']) ? $_SESSION['active_view'] : 'dashboard';
+unset($_SESSION['active_view']); // Clear it after use
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -109,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST
             <!-- Main Content -->
             <div class="main-content">
                 <!-- Dashboard View -->
-                <div class="dashboard-stats" id="dashboard-view">
+                <div class="dashboard-stats" id="dashboard-view" style="<?php if ($active_view !== 'dashboard') echo 'display: none;' ?>">
                     <div class="stat-card">
                         <h3>Total Users</h3>
                         <p><?php 
@@ -134,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST
                 </div>
 
                 <!-- Users View -->
-                <div class="users-table-container" id="users-view" style="display: none;">
+                <div class="users-table-container" id="users-view" style="<?php if ($active_view !== 'users') echo 'display: none;' ?>">
                     <table class="users-table" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
                         <thead>
                             <tr>
@@ -162,10 +190,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST
                     </table>
                 </div>
 
-                <!-- Reports View (Add Data) -->
-                <div id="reports-view" style="display: none;">
-                    <div class="content-card">
-                        <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Add New Data</h2>
+                <div id="reports-view" style="<?php if ($active_view !== 'reports') echo 'display: none;' ?>">
+                    <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h2 style="margin-bottom: 2rem;">Add New Data</h2>
                         <?php if (isset($_SESSION['message'])): ?>
                             <div class="alert alert-<?php echo $_SESSION['message_type']; ?>" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; 
                                 <?php echo $_SESSION['message_type'] === 'success' ? 'background-color: #d4edda; color: #155724;' : 'background-color: #f8d7da; color: #721c24;'; ?>">
@@ -176,68 +203,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST
                                 ?>
                             </div>
                         <?php endif; ?>
-                        <form id="addDataForm" method="POST" style="max-width: 600px; margin: 0 auto;">
-                            <div class="form-group">
-                                <label for="dataType">Data Type</label>
-                                <select id="dataType" name="dataType" required>
-                                    <option value="">Select Data Type</option>
+                        <form id="addDataForm" method="POST">
+                            <div style="margin-bottom: 1.5rem;">
+                                <label for="dataType" style="display: block; margin-bottom: 0.5rem;">Select Data Type</label>
+                                <select id="dataType" name="dataType" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option value="">Choose type...</option>
                                     <option value="course">Subject</option>
-                                    
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label for="name">Name</label>
-                                <input type="text" id="name" name="name" required>
+                            <div style="margin-bottom: 1.5rem;">
+                                <label for="name" style="display: block; margin-bottom: 0.5rem;">Subject Name</label>
+                                <input type="text" id="name" name="name" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
                             </div>
-                           
-                            <div id="dynamicFields">
-                                <!-- Fields will be dynamically added here -->
+                            <button type="submit" style="background-color: #007bff; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; width: 100%;">Add Subject</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Delete Subjects Section -->
+                    <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h2 style="margin-bottom: 2rem;">Delete Subject</h2>
+                        <div id="deleteSubjectResponse"></div>
+                        <form id="deleteSubjectForm" method="POST" onsubmit="handleDelete(event)">
+                            <div style="margin-bottom: 1.5rem;">
+                                <label for="deleteDataType" style="display: block; margin-bottom: 0.5rem;">Select Data Type</label>
+                                <select id="deleteDataType" name="deleteDataType" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option value="">Choose type...</option>
+                                    <option value="subject">Subject</option>
+                                </select>
                             </div>
-                            <button type="submit" style="background-color: var(--accent-color); color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
+                            <div id="subjectSelectDiv" style="margin-bottom: 1.5rem; display: none;">
+                                <label for="subject_to_delete" style="display: block; margin-bottom: 0.5rem;">Select Subject to Delete</label>
+                                <select id="subject_to_delete" name="delete_subject" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                                    <option value="">Choose subject...</option>
+                                    <?php
+                                    $query = "SELECT * FROM tbl_subject ORDER BY subject";
+                                    $result = mysqli_query($conn, $query);
+                                    while ($row = mysqli_fetch_assoc($result)) {
+                                        echo '<option value="' . $row['subject_id'] . '">' . htmlspecialchars($row['subject']) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <button id="deleteButton" type="submit" style="background-color: #dc3545; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; width: 100%; display: none;">Delete Subject</button>
                         </form>
                     </div>
                 </div>
+                
+                <script>
+                document.getElementById('deleteDataType').addEventListener('change', function() {
+                    const subjectDiv = document.getElementById('subjectSelectDiv');
+                    const deleteButton = document.getElementById('deleteButton');
+                    if (this.value === 'subject') {
+                        subjectDiv.style.display = 'block';
+                        deleteButton.style.display = 'block';
+                    } else {
+                        subjectDiv.style.display = 'none';
+                        deleteButton.style.display = 'none';
+                    }
+                });
 
-                <!-- Settings View -->
-                <div id="settings-view" style="display: none;">
-                    <div class="content-card">
-                        <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Settings</h2>
-                        <form id="settingsForm" style="max-width: 600px; margin: 0 auto;">
-                            <div class="form-group">
-                                <label for="siteName">Site Name</label>
-                                <input type="text" id="siteName" name="siteName" value="StudyConnect">
-                            </div>
-                            <div class="form-group">
-                                <label for="maintenanceMode">Maintenance Mode</label>
-                                <select id="maintenanceMode" name="maintenanceMode">
-                                    <option value="off">Off</option>
-                                    <option value="on">On</option>
-                                </select>
-                            </div>
-                            <button type="submit">Save Settings</button>
-                        </form>
-                    </div>
-                </div>
+                function handleDelete(event) {
+                    event.preventDefault();
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    const subjectSelect = document.getElementById('subject_to_delete');
+                    const selectedSubjectText = subjectSelect.options[subjectSelect.selectedIndex].text;
+                    
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        const responseDiv = document.getElementById('deleteSubjectResponse');
+                        responseDiv.innerHTML = '<div class="alert alert-success" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; background-color: #d4edda; color: #155724;">Subject "' + selectedSubjectText + '" deleted successfully!</div>';
+                        
+                        // Remove the deleted option from the dropdown
+                        const selectedOption = subjectSelect.options[subjectSelect.selectedIndex];
+                        subjectSelect.removeChild(selectedOption);
+                        
+                        // Reset the subject select but keep the data type selected
+                        subjectSelect.value = '';
+                        
+                        // If no more subjects, show message
+                        if (subjectSelect.options.length <= 1) {
+                            subjectSelect.innerHTML = '<option value="">No subjects available</option>';
+                            document.getElementById('deleteButton').style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        const responseDiv = document.getElementById('deleteSubjectResponse');
+                        responseDiv.innerHTML = '<div class="alert alert-danger" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; background-color: #f8d7da; color: #721c24;">Error deleting subject. Please try again.</div>';
+                    });
+                    return false;
+                }
+                </script>
             </div>
         </div>
     </div>
-</body>
-<script>
-document.getElementById('addDataForm').addEventListener('submit', function(e) {
-    const dataType = document.getElementById('dataType').value;
-    const name = document.getElementById('name').value;
-    
-    if (dataType === '' || name.trim() === '') {
-        e.preventDefault();
-        alert('Please fill in all required fields');
-        return;
-    }
-});
+</div>
 
-// Clear form after successful submission
-<?php if (isset($_SESSION['message_type']) && $_SESSION['message_type'] === 'success'): ?>
-document.getElementById('name').value = '';
-document.getElementById('dataType').selectedIndex = 0;
-<?php endif; ?>
-</script>
+</body>
 </html>

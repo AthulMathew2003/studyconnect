@@ -90,4 +90,17 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_studentlocation (
     FOREIGN KEY (student_id) REFERENCES tbl_student(student_id) ON DELETE CASCADE
 )";
 $conn->query($sql);
+$sql="CREATE TABLE IF NOT EXISTS tbl_request (
+    request_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT,
+    subject VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    fee_rate DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('open', 'closed') DEFAULT 'open',
+    mode_of_learning ENUM('online', 'offline', 'both') NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES tbl_student(student_id) ON DELETE CASCADE
+)";
+
+$conn->query($sql);
 ?>
