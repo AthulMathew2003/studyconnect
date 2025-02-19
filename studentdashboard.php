@@ -202,15 +202,25 @@ $stmt->close();
                         <form id="newRequestForm" onsubmit="submitRequest(event)">
                             <div class="form-group">
                                 <label for="subject">Subject:</label>
-                                <input type="text" id="subject" name="subject" required>
+                                <select id="subject" name="subject" required>
+                                    <?php
+                                    $query = "SELECT subject_id, subject FROM tbl_subject";
+                                    $result = $conn->query($query);
+                                    
+                                    while ($row = $result->fetch_assoc()) {
+                                        echo "<option value='" . htmlspecialchars($row['subject']) . "'>" . 
+                                             htmlspecialchars($row['subject']) . "</option>";
+                                    }
+                                    ?>
+                                </select>
                             </div>
                             
                             <div class="form-group">
                                 <label for="learningMode">Learning Mode:</label>
                                 <select id="learningMode" name="learningMode" required>
                                     <option value="online">Online</option>
-                                    <option value="inPerson">Offline</option>
-                                    <option value="hybrid">Both</option>
+                                    <option value="offline">Offline</option>
+                                    <option value="both">Both</option>
                                 </select>
                             </div>
 
@@ -233,55 +243,89 @@ $stmt->close();
                 </div>
 
                 <div class="requests-grid" id="requestsContainer">
-                    <div class="request-card">
-                        <div class="card-header">
-                            <div class="header-left">
-                                <span class="request-id">REQ-230491</span>
-                                <div class="status-badge">
-                                    <span class="status-dot"></span>
-                                    Pending
+                    <?php
+                    // Get student_id for the current user
+                    $stmt = $conn->prepare("SELECT student_id FROM tbl_student WHERE userid = ?");
+                    $stmt->bind_param("i", $_SESSION['userid']);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $student = $result->fetch_assoc();
+                    $student_id = $student['student_id'];
+                    $stmt->close();
+
+                    // Fetch requests for this student along with user information
+                    $stmt = $conn->prepare("
+                        SELECT r.*, u.username 
+                        FROM tbl_request r
+                        INNER JOIN tbl_student st ON r.student_id = st.student_id
+                        INNER JOIN users u ON st.userid = u.userid
+                        WHERE r.student_id = ?
+                        ORDER BY r.created_at DESC
+                    ");
+                    $stmt->bind_param("i", $student_id);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+
+                    if ($result->num_rows > 0) {
+                        while ($row = $result->fetch_assoc()) {
+                            ?>
+                            <div class="request-card">
+                                <div class="card-header">
+                                    <div class="header-left">
+                                        <span class="request-id">REQ-<?php echo htmlspecialchars($row['request_id']); ?></span>
+                                        <div class="status-badge">
+                                            <span class="status-dot"></span>
+                                            <?php echo htmlspecialchars($row['status']); ?>
+                                        </div>
+                                    </div>
+                                    <div class="header-actions">
+                                        <button class="action-btn edit" data-id="<?php echo $row['request_id']; ?>">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn delete" data-id="<?php echo $row['request_id']; ?>">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-user"></i> Student Name</span>
+                                        <span class="info-value"><?php echo htmlspecialchars($row['username']); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-book"></i> Subject</span>
+                                        <span class="info-value"><?php echo htmlspecialchars($row['subject']); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-video"></i> Learning Mode</span>
+                                        <span class="info-value"><?php echo htmlspecialchars($row['mode_of_learning']); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-dollar-sign"></i> Budget</span>
+                                        <span class="info-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
+                                    </div>
+                                </div>
+
+                                <div class="details-section">
+                                    <div class="details-title"><i class="fas fa-info-circle"></i> Additional Details</div>
+                                    <p class="details-content">
+                                        <?php echo nl2br(htmlspecialchars($row['description'])); ?>
+                                    </p>
+                                </div>
+
+                                <div class="timestamp">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Submitted on <?php echo date('M d, Y \a\t h:i A', strtotime($row['created_at'])); ?>
                                 </div>
                             </div>
-                            <div class="header-actions">
-                                <button class="action-btn edit"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn delete"><i class="fas fa-trash-alt"></i></button>
-                            </div>
-                        </div>
-
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-user"></i> Student Name</span>
-                                <span class="info-value"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-book"></i> Subject</span>
-                                <span class="info-value">Advanced Physics</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-video"></i> Learning Mode</span>
-                                <span class="info-value">Online</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-dollar-sign"></i> Budget</span>
-                                <span class="info-value">$45/hour</span>
-                            </div>
-                           
-                        </div>
-
-                        <div class="details-section">
-                            <div class="details-title"><i class="fas fa-info-circle"></i> Additional Details</div>
-                            <p class="details-content">
-                                Looking for help with quantum mechanics and thermodynamics.
-                                Preparing for advanced placement exams. Previous experience with
-                                calculus-based physics.
-                            </p>
-                        </div>
-
-                        <div class="timestamp">
-                            <i class="fas fa-calendar-alt"></i>
-                            Submitted on Feb 19, 2025 at 10:30 AM
-                        </div>
-                    </div>
+                            <?php
+                        }
+                    } else {
+                        echo '<div class="no-requests">No requests found. Create a new request to get started!</div>';
+                    }
+                    $stmt->close();
+                    ?>
                 </div>
             </div>
 
@@ -372,10 +416,28 @@ $stmt->close();
 
         function submitRequest(event) {
             event.preventDefault();
-            // Here you would typically send the form data to your server
-            // For now, we'll just close the modal
-            alert('Request submitted successfully!');
-            closeRequestModal();
+            
+            const formData = new FormData(document.getElementById('newRequestForm'));
+            
+            fetch('submit_request.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Request submitted successfully!');
+                    closeRequestModal();
+                    // Optionally refresh the requests list
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while submitting the request');
+            });
         }
 
         // Close modal when clicking outside
