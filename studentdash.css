@@ -1,15 +1,27 @@
 /* Reset and Base Styles */
+:root {
+    --accent-color: #b3a5ff;
+    --bg-color: #ffffff;
+    --card-bg: #f8f9ff;
+    --text-primary: #2d2d2d;
+    --text-secondary: #666666;
+    --border-color: #e0dbff;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f7fb;
-    color: #333;
-    line-height: 1.6;
+    background: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    background-image: 
+        radial-gradient(circle at 20% 20%, #f0edff 0%, transparent 25%),
+        radial-gradient(circle at 80% 80%, #e8e4ff 0%, transparent 25%);
 }
 
 /* Dashboard Container */
@@ -20,19 +32,22 @@ body {
 
 /* Sidebar Styles */
 .sidebar {
-    width: 260px;
-    background-color: #fff;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    position: fixed;
-    height: 100vh;
-    overflow-y: auto;
+    width: 250px;
+    background: var(--card-bg);
+    padding: 2rem 1rem;
+    border-right: 1px solid var(--border-color);
 }
 
 .sidebar-header {
     display: flex;
     align-items: center;
     margin-bottom: 2rem;
+}
+
+.sidebar-header h2 {
+    color: var(--text-primary);
+    margin-bottom: 2rem;
+    font-size: 1.5rem;
 }
 
 .logo {
@@ -51,10 +66,16 @@ body {
     display: flex;
     align-items: center;
     padding: 0.8rem 1rem;
-    color: #666;
+    color: var(--text-secondary);
     text-decoration: none;
     border-radius: 8px;
+    margin-bottom: 0.5rem;
     transition: all 0.3s ease;
+}
+
+.nav-item:hover, .nav-item.active {
+    background: var(--accent-color);
+    color: white;
 }
 
 .nav-item i {
@@ -62,21 +83,11 @@ body {
     font-size: 1.2rem;
 }
 
-.nav-item:hover {
-    background-color: #f0f7ff;
-    color: #2196F3;
-}
-
-.nav-item.active {
-    background-color: #2196F3;
-    color: #fff;
-}
-
-/* Main Content */
+/* Main Content Styles */
 .main-content {
     flex: 1;
-    margin-left: 260px;
     padding: 2rem;
+    margin-left: 260px;
 }
 
 /* Top Navigation */
@@ -86,26 +97,25 @@ body {
     align-items: center;
     margin-bottom: 2rem;
     padding: 1rem;
-    background-color: #fff;
+    background: var(--card-bg);
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 10px rgba(179, 165, 255, 0.1);
 }
 
 .search-bar {
     display: flex;
     align-items: center;
-    background-color: #f5f7fb;
+    background: white;
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    width: 300px;
+    border: 1px solid var(--border-color);
 }
 
 .search-bar input {
     border: none;
-    background: none;
-    margin-left: 0.5rem;
-    width: 100%;
     outline: none;
+    margin-left: 0.5rem;
+    width: 300px;
 }
 
 .nav-right {
@@ -131,11 +141,8 @@ body {
 }
 
 .user-profile {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    cursor: pointer;
     position: relative;
+    cursor: pointer;
 }
 
 .avatar {
@@ -149,11 +156,10 @@ body {
     position: absolute;
     top: 100%;
     right: 0;
-    background-color: #fff;
+    background: white;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     padding: 0.5rem;
-    min-width: 200px;
     display: none;
     z-index: 1000;
 }
@@ -166,17 +172,17 @@ body {
     display: flex;
     align-items: center;
     padding: 0.8rem 1rem;
-    color: #666;
+    color: var(--text-secondary);
     text-decoration: none;
-    border-radius: 4px;
+    border-radius: 6px;
 }
 
 .profile-dropdown a:hover {
-    background-color: #f5f7fb;
+    background: var(--card-bg);
 }
 
 .profile-dropdown i {
-    margin-right: 0.8rem;
+    margin-right: 0.5rem;
 }
 
 /* Welcome Section */
@@ -186,26 +192,33 @@ body {
 
 .welcome-section h1 {
     font-size: 1.8rem;
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .welcome-section p {
-    color: #666;
+    color: var(--text-secondary);
 }
 
 /* Dashboard Grid */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
+    margin-top: 2rem;
 }
 
 .dashboard-card {
-    background-color: #fff;
-    border-radius: 12px;
+    background: var(--card-bg);
     padding: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(179, 165, 255, 0.1);
+}
+
+.dashboard-card h3 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
 }
 
 /* Progress Card */
@@ -226,29 +239,31 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background-color: #f8f9fa;
+    background: white;
     border-radius: 8px;
+    margin-bottom: 0.8rem;
+    border: 1px solid var(--border-color);
 }
 
 .assignment-info h4 {
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 0.3rem;
 }
 
 .assignment-info p {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
 .assignment-status {
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 }
 
 .assignment-status.pending {
-    background-color: #fff3cd;
-    color: #856404;
+    background: #fff3e6;
+    color: #ff9f43;
 }
 
 /* Activity Card */
@@ -261,18 +276,20 @@ body {
 .activity-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 0.8rem;
+    border: 1px solid var(--border-color);
 }
 
 .activity-icon {
-    background-color: #e3f2fd;
-    color: #2196F3;
-    padding: 0.8rem;
-    border-radius: 8px;
+    color: var(--accent-color);
+    margin-right: 1rem;
 }
 
 .activity-details span {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 0.85rem;
 }
 
@@ -287,8 +304,10 @@ body {
     display: flex;
     gap: 1rem;
     padding: 1rem;
-    background-color: #f8f9fa;
+    background: white;
     border-radius: 8px;
+    margin-bottom: 0.8rem;
+    border: 1px solid var(--border-color);
 }
 
 .recommended-course img {
@@ -304,12 +323,12 @@ body {
 
 .course-info p {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-secondary);
     margin-bottom: 0.8rem;
 }
 
 .enroll-btn {
-    background-color: #2196F3;
+    background-color: var(--accent-color);
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -323,31 +342,22 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
 @media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    
     .sidebar {
-        width: 0;
-        padding: 0;
-        transform: translateX(-100%);
-        transition: all 0.3s ease;
+        width: 100%;
+        padding: 1rem;
     }
-
-    .sidebar.show {
-        width: 260px;
-        padding: 1.5rem;
-        transform: translateX(0);
-    }
-
+    
     .main-content {
+        padding: 1rem;
         margin-left: 0;
     }
-
-    .search-bar {
+    
+    .search-bar input {
         width: 200px;
     }
 }

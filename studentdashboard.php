@@ -9,14 +9,18 @@ if (!isset($_SESSION['username'])) {
 }
 
 // Check if user exists in tbl_student
-$userid = $_SESSION['userid'];
-$result = $conn->query("SELECT student_id FROM tbl_student WHERE userid = $userid");
+$userid = (int)$_SESSION['userid'];
+$stmt = $conn->prepare("SELECT student_id FROM tbl_student WHERE userid = ?");
+$stmt->bind_param("i", $userid);
+$stmt->execute();
+$result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
     // User not found in tbl_student, redirect to profile page
     header('Location: studentprofile.php');
     exit();
 }
+$stmt->close();
 ?>
 
 <!DOCTYPE html>

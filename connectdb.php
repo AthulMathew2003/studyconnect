@@ -80,4 +80,14 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_student (
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 )";
 $conn->query($sql);
+$sql="CREATE TABLE IF NOT EXISTS tbl_studentlocation (
+    studentlocation_id INT AUTO_INCREMENT PRIMARY KEY,
+    pincode VARCHAR(10) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    student_id INT NOT NULL,
+    FOREIGN KEY (student_id) REFERENCES tbl_student(student_id) ON DELETE CASCADE
+)";
+$conn->query($sql);
 ?>

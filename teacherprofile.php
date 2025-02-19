@@ -147,32 +147,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tutor_id = mysqli_insert_id($conn);
         }
         
-        // Update location information
-        $location_sql = "INSERT INTO tbl_locations (userid, pincode, city, state, country) 
-                        VALUES ('$userid', '$pincode', '$city', '$state', '$country') 
-                        ON DUPLICATE KEY UPDATE 
-                        pincode = '$pincode', 
-                        city = '$city', 
-                        state = '$state', 
-                        country = '$country'";
-        mysqli_query($conn, $location_sql);
+        // Check if location exists for the user
+        $check_sql = "SELECT userid FROM tbl_locations WHERE userid = '" . mysqli_real_escape_string($conn, $userid) . "'";
+        $check_result = mysqli_query($conn, $check_sql);
         
-        // Update subjects
-        // First delete existing subjects
-        $delete_subjects_sql = "DELETE FROM tbl_tutorsubject WHERE tutor_id = '$tutor_id'";
-        mysqli_query($conn, $delete_subjects_sql);
+        if (mysqli_num_rows($check_result) > 0) {
+            // Location exists, check if any changes were made
+            $get_current_sql = "SELECT pincode, city, state, country FROM tbl_locations WHERE userid = '" . mysqli_real_escape_string($conn, $userid) . "'";
+            $current_result = mysqli_query($conn, $get_current_sql);
+            $current_data = mysqli_fetch_assoc($current_result);
+            
+            // Check if any field has changed
+            if ($current_data['pincode'] !== $pincode || 
+                $current_data['city'] !== $city || 
+                $current_data['state'] !== $state || 
+                $current_data['country'] !== $country) {
+                    
+                // Update location
+                $update_sql = "UPDATE tbl_locations SET 
+                             pincode = '" . mysqli_real_escape_string($conn, $pincode) . "',
+                             city = '" . mysqli_real_escape_string($conn, $city) . "',
+                             state = '" . mysqli_real_escape_string($conn, $state) . "',
+                             country = '" . mysqli_real_escape_string($conn, $country) . "'
+                             WHERE userid = '" . mysqli_real_escape_string($conn, $userid) . "'";
+                mysqli_query($conn, $update_sql);
+            }
+        } else {
+            // Location doesn't exist, insert new record
+            $insert_sql = "INSERT INTO tbl_locations (userid, pincode, city, state, country) 
+                          VALUES ('" . mysqli_real_escape_string($conn, $userid) . "',
+                                 '" . mysqli_real_escape_string($conn, $pincode) . "',
+                                 '" . mysqli_real_escape_string($conn, $city) . "',
+                                 '" . mysqli_real_escape_string($conn, $state) . "',
+                                 '" . mysqli_real_escape_string($conn, $country) . "')";
+            mysqli_query($conn, $insert_sql);
+        }
         
-        // Insert new subjects
-        if (!empty($subjects)) {
-            foreach ($subjects as $subject_id) {
-                // Validate that subject_id is numeric
-                if (!is_numeric($subject_id)) {
-                    throw new Exception("Invalid subject ID");
+        // Get existing subjects for the tutor
+        $existing_subjects_sql = "SELECT ts.subject_id, s.subject 
+                                FROM tbl_tutorsubject ts 
+                                JOIN tbl_subject s ON ts.subject_id = s.subject_id 
+                                WHERE ts.tutor_id = '" . mysqli_real_escape_string($conn, $tutor_id) . "'";
+        $existing_subjects_result = mysqli_query($conn, $existing_subjects_sql);
+        
+        // Store existing subjects for display
+        $existing_subjects = array();
+        while ($row = mysqli_fetch_assoc($existing_subjects_result)) {
+            $existing_subjects[] = $row['subject_id'];
+        }
+
+        // Handle subject updates
+        if (isset($subjects)) {
+            // First, delete all existing subjects for this tutor
+            $delete_sql = "DELETE FROM tbl_tutorsubject WHERE tutor_id = " . (int)$tutor_id;
+            if (!mysqli_query($conn, $delete_sql)) {
+                throw new Exception("Error deleting existing subjects: " . mysqli_error($conn));
+            }
+            
+            // Then insert new subjects if any are selected
+            if (!empty($subjects)) {
+                foreach ($subjects as $subject_id) {
+                    if (!is_numeric($subject_id)) {
+                        throw new Exception("Invalid subject ID");
+                    }
+                    
+                    // Insert new subject mapping
+                    $insert_sql = "INSERT INTO tbl_tutorsubject (tutor_id, subject_id) VALUES (" . (int)$tutor_id . ", " . (int)$subject_id . ")";
+                    if (!mysqli_query($conn, $insert_sql)) {
+                        throw new Exception("Error inserting subject: " . mysqli_error($conn));
+                    }
                 }
-                $subject_id = mysqli_real_escape_string($conn, $subject_id);
-                $insert_subjects_sql = "INSERT INTO tbl_tutorsubject (tutor_id, subject_id) 
-                                      VALUES ('$tutor_id', '$subject_id')";
-                mysqli_query($conn, $insert_subjects_sql);
             }
         }
         

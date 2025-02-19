@@ -67,4 +67,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dashboardView) {
         dashboardView.click();
     }
+
+    // Profile dropdown functionality
+    const profileTrigger = document.getElementById('profile-dropdown-trigger');
+    const profileDropdown = document.getElementById('profile-dropdown');
+
+    if (profileTrigger && profileDropdown) {
+        // Toggle dropdown on click
+        profileTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!profileTrigger.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+            }
+        });
+    }
 });

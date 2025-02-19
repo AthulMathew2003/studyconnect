@@ -7,6 +7,30 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 include 'connectdb.php';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST['dataType'] === 'course') {
+    $subject_name = mysqli_real_escape_string($conn, $_POST['name']);
+    
+    // Check if subject already exists
+    $check_query = "SELECT * FROM tbl_subject WHERE subject = '$subject_name'";
+    $result = mysqli_query($conn, $check_query);
+    
+    if (mysqli_num_rows($result) > 0) {
+        $_SESSION['message'] = "Subject already exists!";
+        $_SESSION['message_type'] = "error";
+    } else {
+        // Insert new subject
+        $insert_query = "INSERT INTO tbl_subject (subject) VALUES ('$subject_name')";
+        
+        if (mysqli_query($conn, $insert_query)) {
+            $_SESSION['message'] = "Subject added successfully!";
+            $_SESSION['message_type'] = "success";
+        } else {
+            $_SESSION['message'] = "Error adding subject: " . mysqli_error($conn);
+            $_SESSION['message_type'] = "error";
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -142,28 +166,34 @@ include 'connectdb.php';
                 <div id="reports-view" style="display: none;">
                     <div class="content-card">
                         <h2 style="color: var(--text-primary); margin-bottom: 1.5rem;">Add New Data</h2>
-                        <form id="addDataForm" style="max-width: 600px; margin: 0 auto;">
+                        <?php if (isset($_SESSION['message'])): ?>
+                            <div class="alert alert-<?php echo $_SESSION['message_type']; ?>" style="padding: 10px; margin-bottom: 15px; border-radius: 4px; 
+                                <?php echo $_SESSION['message_type'] === 'success' ? 'background-color: #d4edda; color: #155724;' : 'background-color: #f8d7da; color: #721c24;'; ?>">
+                                <?php 
+                                    echo $_SESSION['message']; 
+                                    unset($_SESSION['message']);
+                                    unset($_SESSION['message_type']);
+                                ?>
+                            </div>
+                        <?php endif; ?>
+                        <form id="addDataForm" method="POST" style="max-width: 600px; margin: 0 auto;">
                             <div class="form-group">
                                 <label for="dataType">Data Type</label>
                                 <select id="dataType" name="dataType" required>
                                     <option value="">Select Data Type</option>
-                                    <option value="course">Course</option>
-                                    <option value="assignment">Assignment</option>
-                                    <option value="resource">Resource</option>
+                                    <option value="course">Subject</option>
+                                    
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="name">Name</label>
                                 <input type="text" id="name" name="name" required>
                             </div>
-                            <div class="form-group">
-                                <label for="description">Description</label>
-                                <textarea id="description" name="description" rows="4"></textarea>
-                            </div>
+                           
                             <div id="dynamicFields">
                                 <!-- Fields will be dynamically added here -->
                             </div>
-                            <button type="submit">Submit</button>
+                            <button type="submit" style="background-color: var(--accent-color); color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
                         </form>
                     </div>
                 </div>
@@ -192,4 +222,22 @@ include 'connectdb.php';
         </div>
     </div>
 </body>
+<script>
+document.getElementById('addDataForm').addEventListener('submit', function(e) {
+    const dataType = document.getElementById('dataType').value;
+    const name = document.getElementById('name').value;
+    
+    if (dataType === '' || name.trim() === '') {
+        e.preventDefault();
+        alert('Please fill in all required fields');
+        return;
+    }
+});
+
+// Clear form after successful submission
+<?php if (isset($_SESSION['message_type']) && $_SESSION['message_type'] === 'success'): ?>
+document.getElementById('name').value = '';
+document.getElementById('dataType').selectedIndex = 0;
+<?php endif; ?>
+</script>
 </html>

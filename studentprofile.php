@@ -19,6 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $state = $_POST['state'];
     $country = $_POST['country'];
 
+    // Sanitize inputs
+    $mobile = mysqli_real_escape_string($conn, $mobile);
+    $learning_mode = mysqli_real_escape_string($conn, $learning_mode);
+    $pincode = mysqli_real_escape_string($conn, $pincode);
+    $city = mysqli_real_escape_string($conn, $city);
+    $state = mysqli_real_escape_string($conn, $state);
+    $country = mysqli_real_escape_string($conn, $country);
+
     // Handle profile photo upload
     $profile_photo = null;
     if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
@@ -53,55 +61,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Start transaction
     $conn->begin_transaction();
+    
     try {
         // Check if user exists in tbl_student
-        $check_student = "SELECT student_id FROM tbl_student WHERE userid = $userid";
+        $check_student = "SELECT student_id FROM tbl_student WHERE userid = '" . (int)$userid . "'";
         $result_student = $conn->query($check_student);
+        
+        if (!$result_student) {
+            throw new Exception("Error checking student: " . $conn->error);
+        }
+        
+        $student_id = null;
 
         if ($result_student->num_rows === 0) {
             // Insert new student record
             $insert_student = "INSERT INTO tbl_student (userid, mobile, mode_of_learning, profilephoto) 
-                             VALUES ($userid, '$mobile', '$learning_mode', " . ($profile_photo ? "'$profile_photo'" : "NULL") . ")";
-            $conn->query($insert_student);
+                             VALUES ('" . (int)$userid . "', '$mobile', '$learning_mode', " . 
+                             ($profile_photo ? "'$profile_photo'" : "NULL") . ")";
+                             
+            if (!$conn->query($insert_student)) {
+                throw new Exception("Error creating student record: " . $conn->error);
+            }
+            $student_id = $conn->insert_id;
         } else {
             // Update existing student record
+            $student_row = $result_student->fetch_assoc();
+            $student_id = $student_row['student_id'];
             $update_photo = $profile_photo ? ", profilephoto = '$profile_photo'" : "";
+            
             $update_student = "UPDATE tbl_student 
                              SET mobile = '$mobile', 
                                  mode_of_learning = '$learning_mode'
                                  $update_photo
-                             WHERE userid = $userid";
-            $conn->query($update_student);
+                             WHERE userid = '" . (int)$userid . "'";
+                             
+            if (!$conn->query($update_student)) {
+                throw new Exception("Error updating student record: " . $conn->error);
+            }
         }
 
-        // Check if user exists in tbl_locations
-        $check_location = "SELECT * FROM tbl_locations WHERE userid = $userid";
+        // Check if location exists in tbl_studentlocation
+        $check_location = "SELECT * FROM tbl_studentlocation WHERE student_id = '" . (int)$student_id . "'";
         $result_location = $conn->query($check_location);
+        
+        if (!$result_location) {
+            throw new Exception("Error checking location: " . $conn->error);
+        }
 
         if ($result_location->num_rows === 0) {
             // Insert new location record
-            $insert_location = "INSERT INTO tbl_locations (userid, pincode, city, state, country) 
-                              VALUES ($userid, '$pincode', '$city', '$state', '$country')";
-            $conn->query($insert_location);
+            $insert_location = "INSERT INTO tbl_studentlocation (student_id, pincode, city, state, country) 
+                              VALUES ('" . (int)$student_id . "', '$pincode', '$city', '$state', '$country')";
+                              
+            if (!$conn->query($insert_location)) {
+                throw new Exception("Error creating location record: " . $conn->error);
+            }
         } else {
             // Update existing location record
-            $update_location = "UPDATE tbl_locations 
+            $update_location = "UPDATE tbl_studentlocation 
                               SET pincode = '$pincode',
                                   city = '$city',
                                   state = '$state',
                                   country = '$country'
-                              WHERE userid = $userid";
-            $conn->query($update_location);
+                              WHERE student_id = '" . (int)$student_id . "'";
+                              
+            if (!$conn->query($update_location)) {
+                throw new Exception("Error updating location record: " . $conn->error);
+            }
         }
 
         // Commit transaction
         $conn->commit();
         header('Location: studentdashboard.php');
         exit();
+        
     } catch (Exception $e) {
         // Rollback transaction on error
         $conn->rollback();
-        echo "Error: " . $e->getMessage();
+        $error_message = $e->getMessage();
+        echo "<div class='error-message' style='background: #ff6b6b; color: white; padding: 10px; margin: 10px; border-radius: 5px;'>
+                Error: " . htmlspecialchars($error_message) . "
+              </div>";
     }
 }
 
@@ -124,17 +164,26 @@ $location_data = array(
 );
 
 // Fetch existing student data if available
-$student_query = "SELECT * FROM tbl_student WHERE userid = $userid";
+$student_query = "SELECT s.*, sl.pincode, sl.city, sl.state, sl.country 
+                 FROM tbl_student s 
+                 LEFT JOIN tbl_studentlocation sl ON s.student_id = sl.student_id 
+                 WHERE s.userid = $userid";
 $student_result = $conn->query($student_query);
+        
 if ($student_result->num_rows > 0) {
-    $student_data = $student_result->fetch_assoc();
-}
-
-// Fetch existing location data if available
-$location_query = "SELECT * FROM tbl_locations WHERE userid = $userid";
-$location_result = $conn->query($location_query);
-if ($location_result->num_rows > 0) {
-    $location_data = $location_result->fetch_assoc();
+    $row = $student_result->fetch_assoc();
+    $student_data = array(
+        'mobile' => $row['mobile'],
+        'mode_of_learning' => $row['mode_of_learning'],
+        'profilephoto' => $row['profilephoto']
+    );
+    
+    $location_data = array(
+        'pincode' => $row['pincode'],
+        'city' => $row['city'],
+        'state' => $row['state'],
+        'country' => $row['country']
+    );
 }
 ?>
 <!DOCTYPE html>
@@ -414,8 +463,7 @@ if ($location_result->num_rows > 0) {
         .avatar-upload {
             position: relative;
             cursor: pointer;
-            display: flex
-;
+            display: flex;
         }
 
         .avatar-upload input[type="file"] {
