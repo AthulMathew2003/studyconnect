@@ -230,11 +230,21 @@ $stmt->close();
                             </div>
 
                             <div class="form-group">
+                                <label for="startDate">Start Date:</label>
+                                <input type="date" id="startDate" name="startDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="endDate">End Date:</label>
+                                <input type="date" id="endDate" name="endDate" required>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="details">Additional Details:</label>
                                 <textarea id="details" name="details" rows="4" required></textarea>
                             </div>
 
-                            <div class="form-actions">
+                            <div class="form-actions" style="display: flex; justify-content: space-between;">
                                 <button type="button" onclick="closeRequestModal()" class="cancel-btn">Cancel</button>
                                 <button type="submit" class="submit-btn">Submit Request</button>
                             </div>
@@ -288,7 +298,7 @@ $stmt->close();
                                     </div>
                                 </div>
 
-                                <div class="info-grid">
+                                <div class="info-grid" id="infoGrid">
                                     <div class="info-item">
                                         <span class="info-label"><i class="fas fa-user"></i> Student Name</span>
                                         <span class="info-value"><?php echo htmlspecialchars($row['username']); ?></span>
@@ -304,6 +314,14 @@ $stmt->close();
                                     <div class="info-item">
                                         <span class="info-label"><i class="fas fa-dollar-sign"></i> Budget</span>
                                         <span class="info-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-calendar-alt"></i> Start Date</span>
+                                        <span class="info-value"><?php echo date('M d, Y', strtotime($row['start_date'])); ?></span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label"><i class="fas fa-calendar-alt"></i> End Date</span>
+                                        <span class="info-value"><?php echo date('M d, Y', strtotime($row['end_date'])); ?></span>
                                     </div>
                                 </div>
 
@@ -446,8 +464,8 @@ $stmt->close();
                 if (data.success) {
                     alert('Request submitted successfully!');
                     closeRequestModal();
-                    // Optionally refresh the requests list
-                    location.reload();
+                    // Redirect to the Post a Requirement page
+                    window.location.href = 'studentdashboard.php#courses'; // Adjust the URL as needed
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -590,7 +608,7 @@ $stmt->close();
 
     .modal-content {
         background-color: #fff;
-        margin: 10% auto;
+        margin: 5% auto;
         padding: 20px;
         border-radius: 8px;
         width: 90%;

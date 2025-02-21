@@ -23,6 +23,8 @@ $student_id = $student['student_id'];
 // Sanitize inputs
 $subject = $conn->real_escape_string($_POST['subject']);
 $mode_of_learning = $conn->real_escape_string($_POST['learningMode']);
+$start_date = $conn->real_escape_string($_POST['startDate']);
+$end_date = $conn->real_escape_string($_POST['endDate']);
 if (!in_array($mode_of_learning, ['online', 'offline', 'both'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid learning mode']);
     exit();
@@ -31,8 +33,8 @@ $fee_rate = (float)$_POST['budget'];
 $description = $conn->real_escape_string($_POST['details']);
 
 // Insert into tbl_request
-$query = "INSERT INTO tbl_request (student_id, subject, mode_of_learning, fee_rate, description, status, created_at) 
-          VALUES ($student_id, '$subject', '$mode_of_learning', $fee_rate, '$description', 'open', NOW())";
+$query = "INSERT INTO tbl_request (student_id, subject, mode_of_learning, fee_rate, description, start_date, end_date, status, created_at) 
+          VALUES ($student_id, '$subject', '$mode_of_learning', $fee_rate, '$description', '$start_date', '$end_date', 'open', NOW())";
 
 if ($conn->query($query)) {
     echo json_encode(['success' => true]);

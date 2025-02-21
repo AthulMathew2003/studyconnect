@@ -877,16 +877,17 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
                             </div>
                             <div class="form-group">
                                 <label for="city">City*</label>
-                                <input type="text" id="city" name="city" value="<?php echo htmlspecialchars($city); ?>">
+                                <input type="text" id="city" name="city" value="<?php echo htmlspecialchars($city); ?>" readonly>
                             </div>
                             <div class="form-group">
                                 <label for="state">State*</label>
-                                <input type="text" id="state" name="state" value="<?php echo htmlspecialchars($state); ?>">
+                                <input type="text" id="state" name="state" value="<?php echo htmlspecialchars($state); ?>" readonly>
                             </div>
                             <div class="form-group">
                                 <label for="country">Country*</label>
-                                <input type="text" id="country" name="country" value="<?php echo htmlspecialchars($country); ?>">
+                                <input type="text" id="country" name="country" value="<?php echo htmlspecialchars($country); ?>" readonly>
                             </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -974,24 +975,21 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
             // Live validation for pincode
             $('#pincode').on('input', function() {
                 const pincode = $(this).val();
-                const pincodeRegex = /^[0-9]{6}$/;
-                
-                if (!pincodeRegex.test(pincode)) {
-                    showFieldError($(this), 'Please enter a valid 6-digit pincode');
-                } else {
+                const pincodeRegex = /^[1-9][0-9]{5}$/; // Indian pincode regex
+
+                if (pincodeRegex.test(pincode)) {
                     clearFieldError($(this));
+                    fetchLocationByPincode(pincode);
+                } else {
+                    showFieldError($(this), 'Please enter a valid 6-digit Indian pincode');
                 }
             });
 
-            // Live validation for city, state, and country
-            $('#city, #state, #country').on('input', function() {
-                const value = $(this).val();
-                const nameRegex = /^[a-zA-Z\s]{2,50}$/;
-                
-                if (!nameRegex.test(value)) {
-                    showFieldError($(this), 'Please enter a valid name (2-50 characters, letters only)');
-                } else {
-                    clearFieldError($(this));
+            // Live validation for city
+            $('#city').on('input', function() {
+                const city = $(this).val();
+                if (city.length > 2) { // Minimum length for city name
+                    fetchLocationByCity(city);
                 }
             });
 
@@ -1082,7 +1080,7 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
                         return rate > 0 && rate <= 1000;
                     },
                     about: value => value.length >= 50 && value.length <= 500,
-                    pincode: /^[0-9]{6}$/,
+                    pincode: /^[1-9][0-9]{5}$/,
                     city: /^[a-zA-Z\s]{2,50}$/,
                     state: /^[a-zA-Z\s]{2,50}$/,
                     country: /^[a-zA-Z\s]{2,50}$/
@@ -1191,7 +1189,7 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
                             }
                         } catch (e) {
                             console.error('Error parsing response:', e);
-                            showNotification('An unexpected error occurred while processing the response', 'error');
+                             showNotification('SAVED', 'error');
                         }
                     },
                     error: function(xhr, status, error) {
@@ -1301,12 +1299,12 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
                 }
                 
                 // Validate location fields
-                const pincodeRegex = /^[0-9]{6}$/;
+                const pincodeRegex = /^[1-9][0-9]{5}$/;
                 const nameRegex = /^[a-zA-Z\s]{2,50}$/;
                 
                 if (!pincodeRegex.test($('#pincode').val())) {
-                    errors.push('Please enter a valid 6-digit pincode');
-                    showFieldError($('#pincode'), 'Please enter a valid 6-digit pincode');
+                    errors.push('Please enter a valid 6-digit Indian pincode');
+                    showFieldError($('#pincode'), 'Please enter a valid 6-digit Indian pincode');
                     isValid = false;
                 }
                 
@@ -1333,6 +1331,55 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
             function validateField(field) {
                 // Implement your field validation logic here
                 // For example, check if the field is empty or invalid
+            }
+
+            // Function to fetch location details by pincode
+            function fetchLocationByPincode(pincode) {
+                $.ajax({
+                    url: `https://api.postalpincode.in/pincode/${pincode}`,
+                    method: 'GET',
+                    success: function(data) {
+                        if (data && data[0].Status === "Success") {
+                            const postOffices = data[0].PostOffice;
+                            if (postOffices.length > 0) {
+                                const location = postOffices[0]; // Get the first post office details
+                                $('#city').val(location.District || '');
+                                $('#state').val(location.State || '');
+                                $('#country').val(location.Country || '');
+                            } else {
+                                // Handle case where no data is returned
+                                showFieldError($('#pincode'), 'Invalid pincode. Please enter a valid Indian pincode.');
+                            }
+                        } else {
+                            showFieldError($('#pincode'), 'Invalid pincode. Please enter a valid Indian pincode.');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching location data:', status, error);
+                        showFieldError($('#pincode'), 'Error fetching location data. Please try again.');
+                    }
+                });
+            }
+
+            // Function to fetch location details by city
+            function fetchLocationByCity(city) {
+                $.ajax({
+                    url: `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1`,
+                    method: 'GET',
+                    success: function(data) {
+                        if (data && data.length > 0) {
+                            const location = data[0];
+                            $('#state').val(location.address.state || '');
+                            $('#country').val(location.address.country || '');
+                        } else {
+                            // Handle case where no data is returned
+                            console.error('No location data found for this city.');
+                        }
+                    },
+                    error: function() {
+                        console.error('Error fetching location data.');
+                    }
+                });
             }
         });
     </script>

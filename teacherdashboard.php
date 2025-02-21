@@ -20,6 +20,8 @@ if ($result->num_rows == 0) {
     exit();
 }
 $check_tutor->close();
+
+
 ?>
 
 <!DOCTYPE html>
@@ -1009,29 +1011,46 @@ $check_tutor->close();
             </div>
 
             <div class="requests-grid">
-              <div class="request-card">
-                <h3 class="student-name">Athul</h3>
-                <p class="requirements">Looking for help with Mathematics fundamentals and advanced concepts.</p>
-                
-                <div class="tags">
-                  <span class="tag">📚 Mathematics</span>
-                  <span class="tag">💻 Online</span>
-                  <span class="tag">💰 $12.00/hour</span>
-                </div>
-                
-                <div class="request-info">
-                  <strong>Location:</strong>
-                  <span>Mumbai, Maharashtra, India - 400001</span>
-                  
-                  <strong>Submitted:</strong>
-                  <span>Feb 19, 2025 at 10:35 PM</span>
-                  
-                  <strong>Additional Details:</strong>
-                  <span>111</span>
-                </div>
-                
-                <button class="connect-btn">Connect with Student</button>
-              </div>
+  <?php
+
+  
+
+  $requestresult = $conn->query("SELECT * FROM tbl_request");
+
+  // Check if there are any requests
+  if ($requestresult->num_rows > 0) {
+      while ($request = $requestresult->fetch_assoc()) {
+          $studentid = $request['student_id'];
+          $studentresult = $conn->query("SELECT * FROM tbl_student WHERE student_id=$studentid");
+          $student = $studentresult->fetch_assoc();
+          $userid = $student['userid'];
+          $userresult = $conn->query("SELECT * FROM users WHERE userid=$userid");
+          $user = $userresult->fetch_assoc(); 
+          $locationresult = $conn->query("SELECT * FROM tbl_studentlocation WHERE student_id=$studentid");
+          $location = $locationresult->fetch_assoc();
+
+          echo '<div class="request-card">';
+          echo '<h3 class="student-name">' . htmlspecialchars($user['username']) . '</h3>';
+          echo '<p class="requirements">' . htmlspecialchars($request['description']) . '</p>';
+          echo '<div class="tags">';
+          echo '<span class="tag">📚 ' . htmlspecialchars($request['subject']) . '</span>';
+          echo '<span class="tag">💰 $' . htmlspecialchars($request['fee_rate']) . '/hour</span>';
+          echo '<span class="tag">💻 ' . htmlspecialchars($request['mode_of_learning']) . '</span>';
+          echo '</div>';
+          echo '<div class="request-info">';
+          echo '<strong>Location:</strong> <span>' . htmlspecialchars($location['city'] . ', ' . $location['state'] . ', ' . $location['country']) . '</span>';
+          echo '<strong>Submitted:</strong> <span>' . htmlspecialchars($request['created_at']) . '</span>';
+          echo '</div>';
+          echo '<button class="connect-btn">Connect with Student</button>';
+          echo '</div>';
+      }
+  } else {
+      // No requests found
+      echo "<p>No student requests found.</p>";
+  }
+
+?>
+</div>
               <!-- More request cards can be added here -->
             </div>
           </div>
@@ -1091,81 +1110,113 @@ $check_tutor->close();
     </footer>
 
     <script>
-      // Toggle sidebar
-      const menuToggle = document.querySelector(".menu-toggle");
-      const sidebar = document.querySelector(".sidebar");
-      const mainContent = document.querySelector(".main-content");
+      // Toggle sidebar visibility
+      const menuToggle = document.querySelector('.menu-toggle');
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
 
-      menuToggle.addEventListener("click", () => {
-        sidebar.classList.toggle("active");
-        mainContent.classList.toggle("active");
+      menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        mainContent.classList.toggle('active');
       });
 
-      // Toggle dropdowns
-      const dropdownToggleElements = document.querySelectorAll(
-        ".profile-dropdown, .coin-wallet, .ratings-reviews"
-      );
+      // Handle dropdown menu visibility
+      const profileDropdown = document.querySelector('.profile-dropdown');
+      const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
 
-      dropdownToggleElements.forEach((element) => {
-        element.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const dropdown = element.querySelector(".dropdown-menu");
-
-          // Close all other dropdowns
-          document.querySelectorAll(".dropdown-menu.active").forEach((menu) => {
-            if (menu !== dropdown) {
-              menu.classList.remove("active");
-            }
-          });
-
-          dropdown.classList.toggle("active");
-        });
+      profileDropdown.addEventListener('click', () => {
+        dropdownMenu.classList.toggle('active');
       });
 
-      // Close dropdowns when clicking outside
-      document.addEventListener("click", () => {
-        document.querySelectorAll(".dropdown-menu").forEach((menu) => {
-          menu.classList.remove("active");
-        });
-      });
-
-      // Close sidebar when clicking outside on mobile
-      document.addEventListener("click", (e) => {
-        if (
-          window.innerWidth <= 768 &&
-          !sidebar.contains(e.target) &&
-          !menuToggle.contains(e.target) &&
-          sidebar.classList.contains("active")
-        ) {
-          sidebar.classList.remove("active");
-          mainContent.classList.remove("active");
+      // Close dropdown when clicking outside
+      window.addEventListener('click', (event) => {
+        if (!profileDropdown.contains(event.target)) {
+          dropdownMenu.classList.remove('active');
         }
       });
 
-      document.addEventListener('DOMContentLoaded', function() {
-        // Get all navigation links
-        const navLinks = document.querySelectorAll('.nav-links a');
-        
-        // Add click event listener to each link
-        navLinks.forEach(link => {
-          link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all links and sections
-            navLinks.forEach(l => l.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(section => {
-              section.classList.remove('active');
-            });
-            
-            // Add active class to clicked link
-            this.classList.add('active');
-            
-            // Show corresponding content section
-            const sectionId = this.getAttribute('data-section');
-            document.getElementById(sectionId).classList.add('active');
+      // Manage active state of navigation links and show respective content
+      const navLinks = document.querySelectorAll('.nav-links a');
+      const contentSections = document.querySelectorAll('.content-section');
+
+      navLinks.forEach(link => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault(); // Prevent default anchor behavior
+          
+          // Hide all content sections
+          contentSections.forEach(section => {
+            section.classList.remove('active');
           });
+
+          // Remove active class from all links
+          navLinks.forEach(nav => nav.classList.remove('active'));
+
+          // Show the clicked section and add active class to the link
+          const targetSection = document.getElementById(link.getAttribute('data-section'));
+          if (targetSection) {
+            targetSection.classList.add('active');
+            link.classList.add('active');
+          }
         });
       });
+
+      // Handle dropdown menu visibility for ratings and coins
+      const ratingsDropdown = document.querySelector('.ratings-reviews .dropdown-menu');
+      const coinDropdown = document.querySelector('.coin-wallet .dropdown-menu');
+
+      document.querySelector('.ratings-reviews').addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent event from bubbling up
+        ratingsDropdown.classList.toggle('active');
+      });
+
+      document.querySelector('.coin-wallet').addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent event from bubbling up
+        coinDropdown.classList.toggle('active');
+      });
+
+      // Close dropdowns when clicking outside
+      window.addEventListener('click', () => {
+        ratingsDropdown.classList.remove('active');
+        coinDropdown.classList.remove('active');
+      });
+
+      // Fetch student requests using AJAX
+      function fetchStudentRequests() {
+          fetch('fetch_requests.php')
+              .then(response => response.json())
+              .then(data => {
+                  const requestsGrid = document.querySelector('.requests-grid');
+                  requestsGrid.innerHTML = ''; // Clear existing content
+
+                  if (data.length > 0) {
+                      data.forEach(request => {
+                          const requestCard = `
+                              <div class="request-card">
+                                  <h3 class="student-name">${request.username}</h3>
+                                  <p class="requirements">${request.description}</p>
+                                  <div class="tags">
+                                      <span class="tag">📚 ${request.subject}</span>
+                                      <span class="tag">💰 $${request.fee_rate}/hour</span>
+                                      <span class="tag">💻 ${request.mode_of_learning}</span>
+                                  </div>
+                                  <div class="request-info">
+                                      <strong>Location:</strong> <span>${request.location}</span>
+                                      <strong>Submitted:</strong> <span>${request.created_at}</span>
+                                  </div>
+                                  <button class="connect-btn">Connect with Student</button>
+                              </div>
+                          `;
+                          requestsGrid.innerHTML += requestCard;
+                      });
+                  } else {
+                      requestsGrid.innerHTML = "<p>No student requests found.</p>";
+                  }
+              })
+              .catch(error => console.error('Error fetching requests:', error));
+      }
+
+      // Call the function to fetch requests when the page loads
+      document.addEventListener('DOMContentLoaded', fetchStudentRequests);
     </script>
   </body>
 </html>

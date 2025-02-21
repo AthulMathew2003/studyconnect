@@ -630,6 +630,48 @@ if ($student_result->num_rows > 0) {
                     setTimeout(() => saveButton.classList.remove('shake'), 500);
                 }
             });
+
+            pincodeInput.addEventListener('blur', function() {
+                const pincode = this.value;
+                if (pincode.length === 6) {
+                    fetch(`https://api.postalpincode.in/pincode/${pincode}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data[0].Status === "Success") {
+                                const postOffice = data[0].PostOffice[0];
+                                cityInput.value = postOffice.District;
+                                stateInput.value = postOffice.State;
+                                countryInput.value = postOffice.Country;
+
+                                // Make fields read-only
+                                cityInput.readOnly = true;
+                                stateInput.readOnly = true;
+                                countryInput.readOnly = true;
+                            } else {
+                                showError(this, "Invalid Pincode. Please enter a valid Indian pincode.");
+                            }
+                        })
+                        .catch(error => {
+                            showError(this, "Error fetching location data. Please try again.");
+                        });
+                }
+            });
+
+            const profilePhotoInput = document.getElementById('profilePhotoInput');
+            const profilePhotoPreview = document.getElementById('profilePhotoPreview');
+
+            profilePhotoInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        profilePhotoPreview.innerHTML = `<img src="${e.target.result}" alt="Profile Photo" style="width: 200px; height: 200px; border-radius: 50%;">`;
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    profilePhotoPreview.innerHTML = '<i class="fas fa-user" style="opacity: 0.8;"></i>';
+                }
+            });
         });
     </script>
 </head>
@@ -637,8 +679,8 @@ if ($student_result->num_rows > 0) {
     <form class="profile-container" method="POST" action="" enctype="multipart/form-data">
         <div class="profile-header">
             <label class="avatar-container avatar-upload">
-                <input type="file" name="profile_photo" accept="image/*">
-                <div class="avatar">
+                <input type="file" name="profile_photo" accept="image/*" id="profilePhotoInput">
+                <div class="avatar" id="profilePhotoPreview">
                     <?php if (!empty($student_data['profilephoto']) && file_exists($student_data['profilephoto'])): ?>
                         <img src="<?php echo htmlspecialchars($student_data['profilephoto']); ?>" alt="Profile Photo" style="width: 200px; height: 200px;  border-radius: 50%;">
                     <?php else: ?>
