@@ -510,7 +510,7 @@ body {
 .status-dot {
   width: 8px;
   height: 8px;
-  background: #6e45e2;
+  background: #88d3ce;
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -541,9 +541,8 @@ body {
 }
 
 .details-section {
-  background: rgba(110, 69, 226, 0.05);
   border-radius: 15px;
-  padding: 1rem;
+
   margin-bottom: 1rem;
 }
 

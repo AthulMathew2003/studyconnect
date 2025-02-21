@@ -46,8 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Create profilepic directory if it doesn't exist
-        if (!file_exists('profilepic')) {
-            mkdir('profilepic', 0777, true);
+        if (!file_exists('uploads/profile_photos')) {
+            mkdir('uploads/profile_photos', 0777, true);
         }
         
         // Delete old profile photo if exists
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $old_photo_result = mysqli_query($conn, $old_photo_sql);
             $old_photo = mysqli_fetch_assoc($old_photo_result);
             if ($old_photo && $old_photo['profile_photo']) {
-                $old_photo_path = 'profilepic/' . $old_photo['profile_photo'];
+                $old_photo_path = 'uploads/profile_photos/' . $old_photo['profile_photo'];
                 if (file_exists($old_photo_path)) {
                     unlink($old_photo_path);
                 }
@@ -66,12 +66,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Generate unique filename
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = 'profile_' . $userid . '_' . time() . '.' . $extension;
-        $target_path = 'profilepic/' . $filename;
+        $target_path = 'uploads/profile_photos/' . $filename;
         
         if (move_uploaded_file($file['tmp_name'], $target_path)) {
             $profile_photo = $filename;
         } else {
             $response['message'] = 'Failed to upload profile photo';
+            echo json_encode($response);
+            exit;
+        }
+    } else {
+        // If there was an error with the file upload, set an error message
+        if (isset($_FILES['profile_photo']['error']) && $_FILES['profile_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $response['message'] = 'Error uploading profile photo: ' . $_FILES['profile_photo']['error'];
             echo json_encode($response);
             exit;
         }
@@ -281,7 +288,7 @@ if ($tutor) {
 }
 
 // Set default profile image if none exists
-$profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['profile_photo'] : '/api/placeholder/150/150';
+$profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' . $tutor['profile_photo'] : '/api/placeholder/150/150';
 
 ?>
 
@@ -742,7 +749,7 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
                     <div class="profile-info">
                         <h2 id="display-username"><?php echo htmlspecialchars($user['username']); ?></h2>
                         <p id="display-email"><?php echo htmlspecialchars($user['email']); ?></p>
-                        <p id="display-role">Mathematics Tutor</p>
+                      
                     </div>
                 </div>
             </div>
@@ -1169,6 +1176,7 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
                     contentType: false,
                     success: function(response) {
                         try {
+                            console.error('Response received:', response); // Log the response
                             const result = typeof response === 'string' ? JSON.parse(response) : response;
                             
                             if (result.success) {
@@ -1182,8 +1190,8 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
                                 showNotification(result.message || 'An error occurred while saving', 'error');
                             }
                         } catch (e) {
-                            showNotification('An unexpected error occurred', 'error');
                             console.error('Error parsing response:', e);
+                            showNotification('An unexpected error occurred while processing the response', 'error');
                         }
                     },
                     error: function(xhr, status, error) {
@@ -1313,11 +1321,19 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'profilepic/' . $tutor['pro
                 return isValid;
             }
 
-            // Run initial validation on page load
-            $(window).on('load', function() {
-                validateForm();
-                isProfileComplete();
+            // Live validation for fields
+            $('#age, #experience, #hourly_rate, #mobile, #pincode, #city, #state, #country, #about').on('input', function() {
+                // Only validate if the user has interacted with the field
+                if ($(this).val().length > 0) {
+                    validateField($(this));
+                }
             });
+
+            // Function to validate individual fields
+            function validateField(field) {
+                // Implement your field validation logic here
+                // For example, check if the field is empty or invalid
+            }
         });
     </script>
 </body>

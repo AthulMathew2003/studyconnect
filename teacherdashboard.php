@@ -623,10 +623,10 @@ $check_tutor->close();
       .filter-select {
         width: 100%;
         padding: 1rem 1.5rem;
-        border: 2px solid var(--border-color);
+        border: 2px solid var(--input-color);
         border-radius: 20px;
         background: white;
-        color: var(--text-primary);
+        color: var(--text-color);
         cursor: pointer;
         appearance: none;
         transition: all 0.3s ease;
@@ -652,7 +652,7 @@ $check_tutor->close();
         padding: 2rem;
         transition: all 0.3s ease;
         position: relative;
-        border: 2px solid var(--border-color);
+        border: 2px solid var(--input-color);
         overflow: hidden;
         display: flex;
         flex-direction: column;
@@ -668,14 +668,9 @@ $check_tutor->close();
       .student-name {
         font-size: 1.4rem;
         margin-bottom: 1rem;
-        color: var(--text-primary);
-        border-bottom: 2px dashed var(--border-color);
+        color: var(--text-color);
+        border-bottom: 2px dashed var(--input-color);
         padding-bottom: 0.5rem;
-        height: 60px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
       }
 
       .requirements {
@@ -685,7 +680,7 @@ $check_tutor->close();
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         margin-bottom: 1rem;
-        color: var(--text-secondary);
+        color: var(--text-color);
       }
 
       .tags {
@@ -693,8 +688,6 @@ $check_tutor->close();
         flex-wrap: wrap;
         gap: 0.5rem;
         margin: 1rem 0;
-        height: 80px;
-        overflow: hidden;
       }
 
       .tag {
@@ -703,9 +696,6 @@ $check_tutor->close();
         padding: 0.5rem 1rem;
         border-radius: 15px;
         font-size: 0.9rem;
-        height: 32px;
-        display: flex;
-        align-items: center;
       }
 
       .request-info {
@@ -713,12 +703,7 @@ $check_tutor->close();
         grid-template-columns: auto 1fr;
         gap: 0.5rem 1rem;
         margin: 1.5rem 0;
-        color: var(--text-secondary);
-        height: 100px;
-      }
-
-      .request-info strong {
-        color: var(--text-primary);
+        color: var(--text-color);
       }
 
       .connect-btn {
@@ -733,7 +718,6 @@ $check_tutor->close();
         font-size: 1rem;
         font-weight: 600;
         transition: all 0.3s ease;
-        height: 48px;
       }
 
       .connect-btn:hover {
@@ -969,51 +953,87 @@ $check_tutor->close();
 
         <div id="student-request-content" class="content-section">
           <div class="requests-container">
-            <header class="section-header">
-              <h2>Discover Students</h2>
-            </header>
-
+            <div class="section-header">
+              <h2>Student Requests</h2>
+            </div>
+            
             <div class="filters-container">
               <div class="filter-group">
-                <span class="filter-label">Subject</span>
-                <select class="filter-select" id="subject">
-                  <option value="">All Subjects</option>
+                <span class="filter-label">Location</span>
+                <select class="filter-select">
+                  <option>All Locations</option>
                   <?php
-                  // Fetch subjects from database
-                  $query = "SELECT * FROM tbl_subject ORDER BY subject";
-                  $result = $conn->query($query);
-                  
-                  if ($result && $result->num_rows > 0) {
-                      while($row = $result->fetch_assoc()) {
-                          echo '<option value="' . htmlspecialchars(strtolower($row['subject'])) . '">' 
-                               . htmlspecialchars($row['subject']) . '</option>';
-                      }
-                  }
+                    // Prepare and execute query to get unique locations with city, state, and country
+                    $stmt = $conn->prepare("SELECT DISTINCT city, state, country FROM tbl_studentlocation ORDER BY city, state, country");
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    // Loop through results and create option elements with combined location info
+                    while ($row = $result->fetch_assoc()) {
+                      $location = htmlspecialchars($row['city'] . ', ' . $row['state'] . ', ' . $row['country']);
+                      echo "<option>" . $location . "</option>";
+                    }
+                    $stmt->close();
                   ?>
                 </select>
               </div>
-
+              
               <div class="filter-group">
-                <span class="filter-label">Location</span>
-                <select class="filter-select" id="location">
-                  <option value="">All Locations</option>
-                  <option value="new-york">New York</option>
-                  <option value="london">London</option>
-                  <option value="tokyo">Tokyo</option>
+                <span class="filter-label">Subject</span>
+                <select class="filter-select">
+                  <option>All Subjects</option>
+                  <?php
+                    // Prepare and execute query to get subjects
+                    $stmt = $conn->prepare("SELECT subject FROM tbl_subject");
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    // Loop through results and create option elements
+                    while ($row = $result->fetch_assoc()) {
+                      echo "<option>" . htmlspecialchars($row['subject']) . "</option>";
+                    }
+                    $stmt->close();
+                  ?>
                 </select>
               </div>
-
+              
               <div class="filter-group">
                 <span class="filter-label">Mode</span>
-                <select class="filter-select" id="mode">
-                  <option value="">All Modes</option>
-                  <option value="online">Online</option>
-                  <option value="offline">Offline</option>
+                <select class="filter-select">
+                  <option>All Modes</option>
+                  <option>Online</option>
+                  <option>In-Person</option>
+                  <option>Hybrid</option>
                 </select>
               </div>
             </div>
 
-            <div class="requests-grid" id="requestsGrid"></div>
+            <div class="requests-grid">
+              <div class="request-card">
+                <h3 class="student-name">Athul</h3>
+                <p class="requirements">Looking for help with Mathematics fundamentals and advanced concepts.</p>
+                
+                <div class="tags">
+                  <span class="tag">📚 Mathematics</span>
+                  <span class="tag">💻 Online</span>
+                  <span class="tag">💰 $12.00/hour</span>
+                </div>
+                
+                <div class="request-info">
+                  <strong>Location:</strong>
+                  <span>Mumbai, Maharashtra, India - 400001</span>
+                  
+                  <strong>Submitted:</strong>
+                  <span>Feb 19, 2025 at 10:35 PM</span>
+                  
+                  <strong>Additional Details:</strong>
+                  <span>111</span>
+                </div>
+                
+                <button class="connect-btn">Connect with Student</button>
+              </div>
+              <!-- More request cards can be added here -->
+            </div>
           </div>
         </div>
 
@@ -1145,93 +1165,6 @@ $check_tutor->close();
             document.getElementById(sectionId).classList.add('active');
           });
         });
-      });
-    </script>
-
-    <script>
-      const requests = [
-        {
-          studentName: "Alex Mitchell",
-          subject: "Mathematics",
-          location: "New York",
-          mode: "Online",
-          budget: "$30/hr",
-          requirements: "Need help with Advanced Calculus and Complex Analysis. Looking for an experienced tutor.",
-          tags: ["Calculus", "Complex Analysis", "University Level"]
-        },
-        {
-          studentName: "Sarah Johnson",
-          subject: "Physics",
-          location: "London",
-          mode: "Offline",
-          budget: "$40/hr",
-          requirements: "AP Physics preparation, focusing on mechanics and electromagnetism",
-          tags: ["AP Physics", "Mechanics", "High School"]
-        },
-        {
-          studentName: "Emma Thompson",
-          subject: "Chemistry",
-          location: "New York",
-          mode: "Online",
-          budget: "$35/hr",
-          requirements: "Organic Chemistry tutoring needed for upcoming finals",
-          tags: ["Organic Chemistry", "University Level"]
-        },
-        {
-          studentName: "Michael Chen",
-          subject: "Biology",
-          location: "Tokyo",
-          mode: "Online",
-          budget: "$45/hr",
-          requirements: "Need help with molecular biology and genetics concepts",
-          tags: ["Molecular Biology", "Genetics", "University Level"]
-        }
-      ];
-
-      function createRequestCard(request) {
-        return `
-          <div class="request-card">
-            <h3 class="student-name">${request.studentName}</h3>
-            <p class="requirements">${request.requirements}</p>
-            <div class="tags">
-              ${request.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-            </div>
-            <div class="request-info">
-              <strong>Subject:</strong>
-              <span>${request.subject}</span>
-              <strong>Location:</strong>
-              <span>${request.location}</span>
-              <strong>Mode:</strong>
-              <span>${request.mode}</span>
-              <strong>Budget:</strong>
-              <span>${request.budget}</span>
-            </div>
-            <button class="connect-btn">Connect with Student</button>
-          </div>
-        `;
-      }
-
-      function filterRequests() {
-        const subjectFilter = document.getElementById('subject').value.toLowerCase();
-        const locationFilter = document.getElementById('location').value.toLowerCase();
-        const modeFilter = document.getElementById('mode').value.toLowerCase();
-
-        const filtered = requests.filter(request => {
-          return (!subjectFilter || request.subject.toLowerCase().includes(subjectFilter)) &&
-                 (!locationFilter || request.location.toLowerCase().includes(locationFilter)) &&
-                 (!modeFilter || request.mode.toLowerCase().includes(modeFilter));
-        });
-
-        document.getElementById('requestsGrid').innerHTML = filtered.map(createRequestCard).join('');
-      }
-
-      // Initialize student requests when the page loads
-      document.addEventListener('DOMContentLoaded', function() {
-        const filterSelects = document.querySelectorAll('.filter-select');
-        filterSelects.forEach(select => 
-          select.addEventListener('change', filterRequests));
-
-        filterRequests();
       });
     </script>
   </body>

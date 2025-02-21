@@ -275,7 +275,7 @@ $stmt->close();
                                         <span class="request-id">REQ-<?php echo htmlspecialchars($row['request_id']); ?></span>
                                         <div class="status-badge">
                                             <span class="status-dot"></span>
-                                            <?php echo htmlspecialchars($row['status']); ?>
+                                            <span style="color: #88d3ce;"><?php echo htmlspecialchars($row['status']); ?></span>
                                         </div>
                                     </div>
                                     <div class="header-actions">
@@ -308,8 +308,8 @@ $stmt->close();
                                 </div>
 
                                 <div class="details-section">
-                                    <div class="details-title"><i class="fas fa-info-circle"></i> Additional Details</div>
-                                    <p class="details-content">
+                                    <div class="details-title" style="color: #88d3ce;"><i class="fas fa-info-circle"></i> Additional Details</div>
+                                    <p class="details-content" style="font-weight: 600;">
                                         <?php echo nl2br(htmlspecialchars($row['description'])); ?>
                                     </p>
                                 </div>
@@ -357,6 +357,24 @@ $stmt->close();
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add this HTML for the delete confirmation modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <h2>Confirm Delete</h2>
+            <p>Are you sure you want to delete this request?</p>
+            <div class="form-actions">
+                <button class="cancel-btn" onclick="closeDeleteModal()">Cancel</button>
+                <button class="submit-btn delete-confirm-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add this HTML for the success message -->
+    <div id="successMessage" class="success-message">
+        <i class="fas fa-check-circle"></i>
+        <span id="successText"></span>
     </div>
 
     <script>
@@ -440,12 +458,120 @@ $stmt->close();
             });
         }
 
-        // Close modal when clicking outside
+        function showSuccessMessage(message) {
+            const successMessage = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            successText.textContent = message;
+            successMessage.style.display = 'block';
+            
+            // Hide the message after 3 seconds
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        document.querySelectorAll('.action-btn.delete').forEach(button => {
+            button.addEventListener('click', function() {
+                const requestId = this.getAttribute('data-id');
+                const deleteModal = document.getElementById('deleteConfirmModal');
+                const deleteBtn = deleteModal.querySelector('.delete-confirm-btn');
+                
+                deleteModal.style.display = 'block';
+                
+                deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+                
+                deleteModal.querySelector('.delete-confirm-btn').addEventListener('click', function() {
+                    fetch('delete_request.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: 'request_id=' + requestId
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            button.closest('.request-card').remove();
+                            showSuccessMessage('Request deleted successfully!');
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                        closeDeleteModal();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the request');
+                        closeDeleteModal();
+                    });
+                });
+            });
+        });
+
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        }
+
+        // Update the window click handler to include the delete modal
         window.onclick = function(event) {
-            const modal = document.getElementById('requestModal');
-            if (event.target == modal) {
+            const requestModal = document.getElementById('requestModal');
+            const deleteModal = document.getElementById('deleteConfirmModal');
+            if (event.target == requestModal) {
                 closeRequestModal();
             }
+            if (event.target == deleteModal) {
+                closeDeleteModal();
+            }
+        }
+
+        function openEditModal(requestId) {
+            // Fetch request details
+            fetch('delete_request.php?id=' + requestId)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const request = data.request;
+                        document.getElementById('editRequestId').value = request.request_id;
+                        document.getElementById('editSubject').value = request.subject;
+                        document.getElementById('editLearningMode').value = request.mode_of_learning;
+                        document.getElementById('editBudget').value = request.fee_rate;
+                        document.getElementById('editDetails').value = request.description;
+                        
+                        document.getElementById('editRequestModal').style.display = 'block';
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while fetching the request details');
+                });
+        }
+
+        function updateRequest(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(document.getElementById('editRequestForm'));
+            formData.append('action', 'update'); // Add action parameter for update
+
+            fetch('delete_request.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage('Request updated successfully!');
+                    closeEditModal();
+                    // Refresh the page to show updated data
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the request');
+            });
         }
     </script>
 
@@ -522,6 +648,48 @@ $stmt->close();
         background-color: #f44336;
         color: white;
         border: none;
+    }
+
+    /* Add these styles for the delete confirmation modal */
+    .modal h2 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+
+    .modal p {
+        margin-bottom: 20px;
+    }
+
+    .delete-confirm-btn {
+        background-color: #f44336 !important;
+    }
+
+    .success-message {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4CAF50;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 4px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .success-message i {
+        margin-right: 10px;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
     }
     </style>
 </body>
