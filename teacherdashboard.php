@@ -658,7 +658,7 @@ $check_tutor->close();
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        height: 400px;
+        height: 600px;
       }
 
       .request-card:hover {
@@ -1040,6 +1040,8 @@ $check_tutor->close();
           echo '<div class="request-info">';
           echo '<strong>Location:</strong> <span>' . htmlspecialchars($location['city'] . ', ' . $location['state'] . ', ' . $location['country']) . '</span>';
           echo '<strong>Submitted:</strong> <span>' . htmlspecialchars($request['created_at']) . '</span>';
+          echo '<strong>Start Date:</strong> <span>' . htmlspecialchars($request['start_date']) . '</span>';
+          echo '<strong>End Date:</strong> <span>' . htmlspecialchars($request['end_date']) . '</span>';
           echo '</div>';
           echo '<button class="connect-btn">Connect with Student</button>';
           echo '</div>';
@@ -1202,6 +1204,8 @@ $check_tutor->close();
                                   <div class="request-info">
                                       <strong>Location:</strong> <span>${request.location}</span>
                                       <strong>Submitted:</strong> <span>${request.created_at}</span>
+                                      <strong>Start Date:</strong> <span>${request.start_date}</span>
+                                      <strong>End Date:</strong> <span>${request.end_date}</span>
                                   </div>
                                   <button class="connect-btn">Connect with Student</button>
                               </div>
