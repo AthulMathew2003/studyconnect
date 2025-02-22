@@ -59,6 +59,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         if (mysqli_query($conn, $insert_query)) {
             // Successful registration
+            
+            // Insert initial coin wallet entry
+            $user_id = mysqli_insert_id($conn); // Get the last inserted user ID
+            $insert_wallet_query = "INSERT INTO tbl_coinwallet (userid, coin_balance) VALUES ('$user_id', 0)";
+            mysqli_query($conn, $insert_wallet_query); // Execute the wallet insertion
+            
             header("Location: login.php");
             exit();
         } else {

@@ -8,6 +8,14 @@ if (!isset($_SESSION['username'])) {
 include 'connectdb.php';
 $userid = $_SESSION['userid']; // Fixed the syntax error (missing semicolon)
 
+// Fetch coin balance from tbl_coinwallet
+$coin_query = $conn->prepare("SELECT coin_balance FROM tbl_coinwallet WHERE userid = ?");
+$coin_query->bind_param("i", $userid);
+$coin_query->execute();
+$coin_query->bind_result($coin_balance);
+$coin_query->fetch();
+$coin_query->close();
+
 // Check if user exists in tbl_tutor
 $check_tutor = $conn->prepare("SELECT userid FROM tbl_tutors WHERE userid = ?");
 $check_tutor->bind_param("i", $userid);
@@ -741,6 +749,62 @@ $check_tutor->close();
           width: 100%;
         }
       }
+
+      .confirmation-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+
+      .popup-content {
+        background: var(--base-color);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+      }
+
+      .popup-content p {
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+      }
+
+      .popup-content button {
+        margin: 0 0.5rem;
+        padding: 0.8rem 2rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .popup-content .confirm-connect {
+        background: var(--accent-color);
+        color: white;
+      }
+
+      .popup-content .confirm-connect:hover {
+        background: #7561ff;
+      }
+
+      .popup-content .cancel-connect {
+        background: #f3f0ff;
+        color: var(--text-color);
+      }
+
+      .popup-content .cancel-connect:hover {
+        background: #e8e4ff;
+      }
     </style>
   </head>
   <body>
@@ -778,7 +842,7 @@ $check_tutor->close();
               🪙
               <div class="dropdown-menu">
                 <div class="coin-balance">
-                  Balance: <span class="coin-amount">1,500 coins</span>
+                  Balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?> coins</span>
                 </div>
                 <a href="#">Buy Coins</a>
                 <a href="#">Previous Transactions</a>
@@ -1004,9 +1068,14 @@ $check_tutor->close();
                 <select class="filter-select">
                   <option>All Modes</option>
                   <option>Online</option>
-                  <option>In-Person</option>
-                  <option>Hybrid</option>
+                  <option>Offline</option>
+                  <option>Both</option>
                 </select>
+              </div>
+              <div class="filter-group">
+                <button id="search-button" class="search-button" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 20px; cursor: pointer; transition: background 0.3s;">
+                  Search
+                </button>
               </div>
             </div>
 
@@ -1043,7 +1112,7 @@ $check_tutor->close();
           echo '<strong>Start Date:</strong> <span>' . htmlspecialchars($request['start_date']) . '</span>';
           echo '<strong>End Date:</strong> <span>' . htmlspecialchars($request['end_date']) . '</span>';
           echo '</div>';
-          echo '<button class="connect-btn">Connect with Student</button>';
+          echo '<button class="connect-btn" data-request-id="' . $request['request_id'] . '">Connect with Student</button>';
           echo '</div>';
       }
   } else {
@@ -1053,9 +1122,16 @@ $check_tutor->close();
 
 ?>
 </div>
-              <!-- More request cards can be added here -->
-            </div>
-          </div>
+
+<!-- Add the confirmation popup outside the requests-grid -->
+<div class="confirmation-popup" style="display: none;">
+    <div class="popup-content">
+        <p>Are you sure you want to connect with this student?</p>
+        <button class="confirm-connect">Yes</button>
+        <button class="cancel-connect">No</button>
+    </div>
+</div>
+
         </div>
 
         <div id="messages-content" class="content-section">
@@ -1221,6 +1297,69 @@ $check_tutor->close();
 
       // Call the function to fetch requests when the page loads
       document.addEventListener('DOMContentLoaded', fetchStudentRequests);
+
+      // Add event listener to search button
+      document.getElementById('search-button').addEventListener('click', function() {
+        const location = document.querySelector('.filter-select:nth-of-type(1)').value;
+        const subject = document.querySelector('.filter-select:nth-of-type(2)').value;
+        const mode = document.querySelector('.filter-select:nth-of-type(3)').value;
+        
+        fetch('fetch_requests.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ location, subject, mode })
+        })
+        .then(response => response.json())
+        .then(data => {
+          const requestsGrid = document.querySelector('.requests-grid');
+          requestsGrid.innerHTML = '';
+          if (data.length > 0) {
+            data.forEach(request => {
+              const requestElement = document.createElement('div');
+              requestElement.classList.add('request-item');
+              requestElement.innerHTML = `<p>${request.title}</p><p>${request.description}</p>`;
+              requestsGrid.appendChild(requestElement);
+            });
+          } else {
+            requestsGrid.innerHTML = '<p>No student requests found.</p>';
+          }
+        })
+        .catch(error => console.error('Error fetching requests:', error));
+      });
+
+      // Get the popup element
+      const popup = document.querySelector('.confirmation-popup');
+
+      // Handle connect button click
+      document.addEventListener('click', (event) => {
+        if (event.target.classList.contains('connect-btn')) {
+          popup.style.display = 'flex';
+          // Store the request ID if needed
+          const requestId = event.target.dataset.requestId;
+          popup.dataset.requestId = requestId;
+        }
+      });
+
+      // Handle confirmation actions
+      document.querySelector('.confirm-connect').addEventListener('click', () => {
+        // Logic to connect with the student
+        // You can access the request ID with: popup.dataset.requestId
+        alert('Connected with the student!'); // Placeholder action
+        popup.style.display = 'none';
+      });
+
+      document.querySelector('.cancel-connect').addEventListener('click', () => {
+        popup.style.display = 'none';
+      });
+
+      // Close popup when clicking outside
+      popup.addEventListener('click', (event) => {
+        if (event.target === popup) {
+          popup.style.display = 'none';
+        }
+      });
     </script>
   </body>
 </html>

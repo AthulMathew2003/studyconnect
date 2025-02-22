@@ -103,4 +103,27 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_request (
 )";
 
 $conn->query($sql);
+$sql="CREATE TABLE IF NOT EXISTS tbl_coinwallet (
+    wallet_id INT AUTO_INCREMENT PRIMARY KEY,
+    userid INT NOT NULL,
+    coin_balance INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
+)
+";
+$conn->query($sql);
+$sql="CREATE TABLE IF NOT EXISTS tbl_response (
+    response_id INT AUTO_INCREMENT PRIMARY KEY,
+    request_id INT NOT NULL,
+    tutor_id INT NOT NULL,
+    message TEXT NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    
+     FOREIGN KEY (request_id) REFERENCES tbl_request(request_id) ON DELETE CASCADE,
+   FOREIGN KEY (tutor_id) REFERENCES tbl_tutors(tutor_id) ON DELETE CASCADE
+)
+";
+$conn->query($sql);
 ?>
