@@ -7,7 +7,7 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 include 'connectdb.php';
-
+$_SESSION['back_view'] = 'admindashboard.php';
 // Handle form submission for adding new subject
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataType']) && $_POST['dataType'] === 'course') {
     $subject_name = mysqli_real_escape_string($conn, $_POST['name']);
@@ -55,27 +55,29 @@ if (isset($_POST['delete_subject'])) {
     exit();
 }
 
-// Add this new handler at the top of the file, near other POST handlers
+// Get the active view from session or default to dashboard
+$active_view = isset($_SESSION['active_view']) ? $_SESSION['active_view'] : 'dashboard';
+unset($_SESSION['active_view']); // Clear it after use
+
+// Handle user deletion
 if (isset($_POST['delete_user'])) {
     $user_id = mysqli_real_escape_string($conn, $_POST['delete_user']);
     
-    $delete_query = "DELETE FROM users WHERE userid = '$user_id' AND role != 'admin'";
-    if (mysqli_query($conn, $delete_query)) {
+    $delete_user_query = "DELETE FROM users WHERE userid = '$user_id'";
+    if (mysqli_query($conn, $delete_user_query)) {
         $_SESSION['message'] = "User deleted successfully!";
         $_SESSION['message_type'] = "success";
-        $_SESSION['active_view'] = 'users'; // Set active view to users after deletion
     } else {
         $_SESSION['message'] = "Error deleting user: " . mysqli_error($conn);
         $_SESSION['message_type'] = "error";
     }
     
+    // Store the active view before redirecting
+    $_SESSION['active_view'] = 'users';
+    // Redirect to refresh the page
     header("Location: " . $_SERVER['PHP_SELF']);
     exit();
 }
-
-// Get the active view from session or default to dashboard
-$active_view = isset($_SESSION['active_view']) ? $_SESSION['active_view'] : 'dashboard';
-unset($_SESSION['active_view']); // Clear it after use
 
 ?>
 <!DOCTYPE html>
@@ -135,7 +137,9 @@ unset($_SESSION['active_view']); // Clear it after use
                         <span class="notification-badge">3</span>
                     </div>
                     <div class="profile-section" id="profile-dropdown-trigger">
-                        <img src="/api/placeholder/40/40" alt="Profile" class="profile-avatar">
+                        <svg class="profile-icon" viewBox="0 0 24 24" width="40" height="40">
+                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
                         <span class="profile-name"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                         <div class="profile-dropdown" id="profile-dropdown">
                             <div class="profile-dropdown-item">
@@ -191,43 +195,40 @@ unset($_SESSION['active_view']); // Clear it after use
                             ?>
                         </div>
                     <?php endif; ?>
-
-                    <div class="table-wrapper" style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; margin: 20px;">
-                        <h2 style="margin-bottom: 20px;">User Management</h2>
-                        <table class="users-table" style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa;">
-                                    
-                                    <th style="padding: 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Username</th>
-                                    <th style="padding: 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
-                                    <th style="padding: 15px; text-align: left; border-bottom: 2px solid #dee2e6;">Role</th>
-                                    <th style="padding: 15px; text-align: center; border-bottom: 2px solid #dee2e6;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $query = "SELECT * FROM users WHERE role != 'admin' ORDER BY userid";
-                                $result = mysqli_query($conn, $query);
-                                
-                                while ($row = mysqli_fetch_assoc($result)) {
-                                    echo "<tr style='border-bottom: 1px solid #dee2e6; transition: background-color 0.3s;' onmouseover='this.style.backgroundColor=\"#f8f9fa\"' onmouseout='this.style.backgroundColor=\"\"'>";
-                                   
-                                    echo "<td style='padding: 15px;'>" . htmlspecialchars($row['username']) . "</td>";
-                                    echo "<td style='padding: 15px;'>" . htmlspecialchars($row['email']) . "</td>";
-                                    echo "<td style='padding: 15px;'>" . htmlspecialchars($row['role']) . "</td>";
-                                    echo "<td style='padding: 15px; text-align: center;'>";
-                                    echo "<form method='POST' style='display: inline;' onsubmit='return confirm(\"Are you sure you want to delete this user?\")'>";
-                                    echo "<button type='submit' name='delete_user' value='" . $row['userid'] . "' style='background-color: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;' onmouseover='this.style.backgroundColor=\"#c82333\"' onmouseout='this.style.backgroundColor=\"#dc3545\"'>";
-                                    echo "<i class='fas fa-trash-alt'></i> Delete";
-                                    echo "</button>";
-                                    echo "</form>";
-                                    echo "</td>";
-                                    echo "</tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="users-table" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 12px 15px; text-align: left; border: 1px solid #ddd;">ID</th>
+                                <th style="padding: 12px 15px; text-align: left; border: 1px solid #ddd;">Username</th>
+                                <th style="padding: 12px 15px; text-align: left; border: 1px solid #ddd;">Email</th>
+                                <th style="padding: 12px 15px; text-align: left; border: 1px solid #ddd;">Role</th>
+                                <th style="padding: 12px 15px; text-align: left; border: 1px solid #ddd;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $query = "SELECT * FROM users WHERE role != 'admin' ORDER BY userid";
+                            $result = mysqli_query($conn, $query);
+                            
+                            while ($row = mysqli_fetch_assoc($result)) {
+                                echo "<tr>";
+                                echo "<td style='padding: 12px 15px; border: 1px solid #ddd;'>" . htmlspecialchars($row['userid']) . "</td>";
+                                echo "<td style='padding: 12px 15px; border: 1px solid #ddd;'>" . htmlspecialchars($row['username']) . "</td>";
+                                echo "<td style='padding: 12px 15px; border: 1px solid #ddd;'>" . htmlspecialchars($row['email']) . "</td>";
+                                echo "<td style='padding: 12px 15px; border: 1px solid #ddd;'>" . htmlspecialchars($row['role']) . "</td>";
+                                echo "<td style='padding: 12px 15px; border: 1px solid #ddd;'>
+                                        <form method='POST' style='display:inline;'>
+                                            <input type='hidden' name='delete_user' value='" . htmlspecialchars($row['userid']) . "'>
+                                            <button type='submit' style='background: none; border: none; cursor: pointer;'>
+                                                <i class='fas fa-trash' style='color: red;'></i>
+                                            </button>
+                                        </form>
+                                      </td>";
+                                echo "</tr>";
+                            }
+                            ?>
+                        </tbody>
+                    </table>
                 </div>
 
                 <div id="reports-view" style="<?php if ($active_view !== 'reports') echo 'display: none;' ?>">
@@ -342,6 +343,33 @@ unset($_SESSION['active_view']); // Clear it after use
         </div>
     </div>
 </div>
+
+<style>
+.users-table {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.users-table th {
+    background-color: #007bff;
+    color: white;
+}
+
+.users-table td {
+    background-color: #f9f9f9;
+}
+
+.users-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+button {
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+</style>
 
 </body>
 </html>

@@ -50,18 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mkdir('uploads/profile_photos', 0777, true);
         }
         
-        // Delete old profile photo if exists
-        if ($tutor_exists) {
-            $old_photo_sql = "SELECT profile_photo FROM tbl_tutors WHERE userid = '$userid'";
-            $old_photo_result = mysqli_query($conn, $old_photo_sql);
-            $old_photo = mysqli_fetch_assoc($old_photo_result);
-            if ($old_photo && $old_photo['profile_photo']) {
-                $old_photo_path = 'uploads/profile_photos/' . $old_photo['profile_photo'];
-                if (file_exists($old_photo_path)) {
-                    unlink($old_photo_path);
-                }
-            }
-        }
+        // // Delete old profile photo if exists
+        // if ($tutor_exists) {
+        //     $old_photo_sql = "SELECT profile_photo FROM tbl_tutors WHERE userid = '$userid'";
+        //     $old_photo_result = mysqli_query($conn, $old_photo_sql);
+        //     $old_photo = mysqli_fetch_assoc($old_photo_result);
+        //     if ($old_photo && $old_photo['profile_photo']) {
+        //         $old_photo_path = 'uploads/profile_photos/' . $old_photo['profile_photo'];
+        //         if (file_exists($old_photo_path)) {
+        //             unlink($old_photo_path);
+        //         }
+        //     }
+        // }
         
         // Generate unique filename
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);

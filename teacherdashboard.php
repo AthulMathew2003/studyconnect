@@ -28,6 +28,8 @@ if ($result->num_rows == 0) {
     exit();
 }
 $check_tutor->close();
+$_SESSION['back_view'] = 'teacherdashboard.php';
+
 
 
 ?>
@@ -857,7 +859,7 @@ $check_tutor->close();
               <img src="1.webp" alt="Profile" class="profile-img" />
               <div class="dropdown-menu">
                 <a href="teacherprofile.php">Profile</a>
-                <a href="#">Account</a>
+                <a href="confirmpassword.php">Forgot Password</a>
                 <a href="logout.php">Logout</a>
               </div>
             </div>

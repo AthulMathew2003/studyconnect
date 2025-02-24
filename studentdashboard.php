@@ -21,6 +21,7 @@ if ($result->num_rows === 0) {
     exit();
 }
 $stmt->close();
+$_SESSION['back_view'] = 'studentdashboard.php';
 ?>
 
 <!DOCTYPE html>
@@ -82,11 +83,13 @@ $stmt->close();
                         <span class="notification-badge">3</span>
                     </div>
                     <div class="user-profile">
-                        <img src="assets/default-avatar.png" alt="Profile" class="avatar">
-                        <span class="username"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+                        <svg class="profile-icon" viewBox="0 0 24 24" width="24" height="24">
+                            <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        
                         <div class="profile-dropdown" id="profileDropdown">
                             <a href="studentprofile.php"><i class="fas fa-user"></i> Profile</a>
-                            <a href="settings.php"><i class="fas fa-cog"></i> Settings</a>
+                            <a href="confirmpassword.php"><i class="fas fa-cog"></i> Forgot Password</a>
                             <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
                         </div>
                     </div>
@@ -203,6 +206,7 @@ $stmt->close();
                             <div class="form-group">
                                 <label for="subject">Subject:</label>
                                 <select id="subject" name="subject" required>
+                                    <option value="" disabled selected>Select a subject</option>
                                     <?php
                                     $query = "SELECT subject_id, subject FROM tbl_subject";
                                     $result = $conn->query($query);
@@ -218,6 +222,7 @@ $stmt->close();
                             <div class="form-group">
                                 <label for="learningMode">Learning Mode:</label>
                                 <select id="learningMode" name="learningMode" required>
+                                <option value="" disabled selected>Select a Learning Mode</option>
                                     <option value="online">Online</option>
                                     <option value="offline">Offline</option>
                                     <option value="both">Both</option>
@@ -227,16 +232,19 @@ $stmt->close();
                             <div class="form-group">
                                 <label for="budget">Budget (per hour):</label>
                                 <input type="number" id="budget" name="budget" min="1" required>
+                                <span id="budgetError" style="color: red; display: none;">Please enter a positive budget.</span>
                             </div>
 
                             <div class="form-group">
                                 <label for="startDate">Start Date:</label>
                                 <input type="date" id="startDate" name="startDate" required>
+                                <span id="startDateError" style="color: red; display: none;">Start date cannot be in the past.</span>
                             </div>
 
                             <div class="form-group">
                                 <label for="endDate">End Date:</label>
                                 <input type="date" id="endDate" name="endDate" required>
+                                <span id="endDateError" style="color: red; display: none;">End date cannot be earlier than start date.</span>
                             </div>
 
                             <div class="form-group">
@@ -289,9 +297,7 @@ $stmt->close();
                                         </div>
                                     </div>
                                     <div class="header-actions">
-                                        <button class="action-btn edit" data-id="<?php echo $row['request_id']; ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
+                                        
                                         <button class="action-btn delete" data-id="<?php echo $row['request_id']; ?>">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
@@ -464,8 +470,66 @@ $stmt->close();
                 if (data.success) {
                     alert('Request submitted successfully!');
                     closeRequestModal();
-                    // Redirect to the Post a Requirement page
-                    window.location.href = 'studentdashboard.php#courses'; // Adjust the URL as needed
+                    
+                    // Create a new request card element
+                    const newRequestCard = document.createElement('div');
+                    newRequestCard.className = 'request-card';
+                    newRequestCard.innerHTML = `
+                        <div class="card-header">
+                            <div class="header-left">
+                                <span class="request-id">REQ-${data.request_id}</span>
+                                <div class="status-badge">
+                                    <span class="status-dot"></span>
+                                    <span style="color: #88d3ce;">Pending</span>
+                                </div>
+                            </div>
+                            <div class="header-actions">
+                                
+                                <button class="action-btn delete" data-id="${data.request_id}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="info-grid" id="infoGrid">
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-user"></i> Student Name</span>
+                                <span class="info-value">${data.username}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-book"></i> Subject</span>
+                                <span class="info-value">${data.subject}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-video"></i> Learning Mode</span>
+                                <span class="info-value">${data.learning_mode}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-dollar-sign"></i> Budget</span>
+                                <span class="info-value">$${data.budget}/hour</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-calendar-alt"></i> Start Date</span>
+                                <span class="info-value">${data.start_date}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label"><i class="fas fa-calendar-alt"></i> End Date</span>
+                                <span class="info-value">${data.end_date}</span>
+                            </div>
+                        </div>
+                        <div class="details-section">
+                            <div class="details-title" style="color: #88d3ce;"><i class="fas fa-info-circle"></i> Additional Details</div>
+                            <p class="details-content" style="font-weight: 600;">
+                                ${data.details}
+                            </p>
+                        </div>
+                        <div class="timestamp">
+                            <i class="fas fa-calendar-alt"></i>
+                            Submitted on ${data.created_at}
+                        </div>
+                    `;
+                    
+                    // Append the new request card to the requests container
+                    document.getElementById('requestsContainer').prepend(newRequestCard);
                 } else {
                     alert('Error: ' + data.message);
                 }
@@ -591,6 +655,43 @@ $stmt->close();
                 alert('An error occurred while updating the request');
             });
         }
+
+        // Add this event listener for live validation
+        document.getElementById('budget').addEventListener('input', function() {
+            const budgetInput = this;
+            const budgetError = document.getElementById('budgetError');
+            
+            if (budgetInput.value <= 0) {
+                budgetError.style.display = 'block'; // Show error message
+            } else {
+                budgetError.style.display = 'none'; // Hide error message
+            }
+        });
+
+        // Add this event listener for live validation
+        document.getElementById('startDate').addEventListener('input', function() {
+            const startDateInput = this;
+            const startDateError = document.getElementById('startDateError');
+            const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
+            if (startDateInput.value < today) {
+                startDateError.style.display = 'block'; // Show error message
+            } else {
+                startDateError.style.display = 'none'; // Hide error message
+            }
+        });
+
+        document.getElementById('endDate').addEventListener('input', function() {
+            const endDateInput = this;
+            const startDateInput = document.getElementById('startDate');
+            const endDateError = document.getElementById('endDateError');
+
+            if (endDateInput.value < startDateInput.value) {
+                endDateError.style.display = 'block'; // Show error message
+            } else {
+                endDateError.style.display = 'none'; // Hide error message
+            }
+        });
     </script>
 
     <!-- Add this before closing body tag -->
@@ -708,6 +809,19 @@ $stmt->close();
             transform: translateX(0);
             opacity: 1;
         }
+    }
+
+    .profile-icon {
+        width: 32px;
+        height: 32px;
+        color: #666; /* Adjust color as needed */
+    }
+
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
     }
     </style>
 </body>

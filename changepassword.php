@@ -104,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <button type="submit">Change Password</button>
       </form>
       <div class="login-footer">
-        <p>Dashboard <a href="admindashboard.php">Dashboard</a></p>
+      <p>Back to <a href="<?php echo isset($_SESSION['back_view']) ? $_SESSION['back_view'] : 'admindashboard.php'; ?>">dashboard</a></p>
       </div>
     </div>
   </body>
