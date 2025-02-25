@@ -470,66 +470,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                 if (data.success) {
                     alert('Request submitted successfully!');
                     closeRequestModal();
-                    
-                    // Create a new request card element
-                    const newRequestCard = document.createElement('div');
-                    newRequestCard.className = 'request-card';
-                    newRequestCard.innerHTML = `
-                        <div class="card-header">
-                            <div class="header-left">
-                                <span class="request-id">REQ-${data.request_id}</span>
-                                <div class="status-badge">
-                                    <span class="status-dot"></span>
-                                    <span style="color: #88d3ce;">Pending</span>
-                                </div>
-                            </div>
-                            <div class="header-actions">
-                                
-                                <button class="action-btn delete" data-id="${data.request_id}">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="info-grid" id="infoGrid">
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-user"></i> Student Name</span>
-                                <span class="info-value">${data.username}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-book"></i> Subject</span>
-                                <span class="info-value">${data.subject}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-video"></i> Learning Mode</span>
-                                <span class="info-value">${data.learning_mode}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-dollar-sign"></i> Budget</span>
-                                <span class="info-value">$${data.budget}/hour</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-calendar-alt"></i> Start Date</span>
-                                <span class="info-value">${data.start_date}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label"><i class="fas fa-calendar-alt"></i> End Date</span>
-                                <span class="info-value">${data.end_date}</span>
-                            </div>
-                        </div>
-                        <div class="details-section">
-                            <div class="details-title" style="color: #88d3ce;"><i class="fas fa-info-circle"></i> Additional Details</div>
-                            <p class="details-content" style="font-weight: 600;">
-                                ${data.details}
-                            </p>
-                        </div>
-                        <div class="timestamp">
-                            <i class="fas fa-calendar-alt"></i>
-                            Submitted on ${data.created_at}
-                        </div>
-                    `;
-                    
-                    // Append the new request card to the requests container
-                    document.getElementById('requestsContainer').prepend(newRequestCard);
+                    location.reload(); // Refresh the page after successful submission
                 } else {
                     alert('Error: ' + data.message);
                 }

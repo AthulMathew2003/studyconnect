@@ -1128,6 +1128,7 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
 <!-- Add the confirmation popup outside the requests-grid -->
 <div class="confirmation-popup" style="display: none;">
     <div class="popup-content">
+      
         <p>Are you sure you want to connect with this student?</p>
         <button class="confirm-connect">Yes</button>
         <button class="cancel-connect">No</button>
@@ -1346,9 +1347,24 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
 
       // Handle confirmation actions
       document.querySelector('.confirm-connect').addEventListener('click', () => {
-        // Logic to connect with the student
-        // You can access the request ID with: popup.dataset.requestId
-        alert('Connected with the student!'); // Placeholder action
+        const requestId = popup.dataset.requestId; // Get the request ID
+        // Send AJAX request to connect with the student
+        fetch('connect_student.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ request_id: requestId })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Connected with the student!'); // Placeholder action
+          } else {
+            alert('Failed to connect: ' + data.message);
+          }
+        })
+        .catch(error => console.error('Error connecting with student:', error));
         popup.style.display = 'none';
       });
 
