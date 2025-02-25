@@ -142,9 +142,9 @@ if (isset($_POST['delete_user'])) {
                         </svg>
                         <span class="profile-name"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
                         <div class="profile-dropdown" id="profile-dropdown">
-                            <div class="profile-dropdown-item">
+                            <!-- <div class="profile-dropdown-item">
                                 <i class="fas fa-user"></i> Profile
-                            </div>
+                            </div> -->
                             <div class="profile-dropdown-item">
                                 <a href="confirmpassword.php" style="text-decoration: none; color: inherit;"><i class="fas fa-key"></i> Change Password</a>
                             </div>

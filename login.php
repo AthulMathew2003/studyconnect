@@ -61,6 +61,7 @@ include 'connectdb.php';
   </head>
   <body>
     <div class="wrapper">
+      <h2 class="site-header">StudyConnect</h2>
       <h1>Login</h1>
       <?php if (isset($loginError)) echo "<p class='error-message'>$loginError</p>"; ?>
       <form id="form" method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
