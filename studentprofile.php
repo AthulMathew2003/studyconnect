@@ -520,7 +520,7 @@ if ($student_result->num_rows > 0) {
             const saveButton = form.querySelector('.save-button');
 
             // Validation patterns
-            const mobilePattern = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
+            const mobilePattern = /^[789]\d{9}$/;
             const pincodePattern = /^[0-9]{6}$/;
             const textPattern = /^[A-Za-z\s]{2,50}$/;
 

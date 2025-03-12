@@ -963,10 +963,10 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
             // Live validation for mobile
             $('#mobile').on('input', function() {
                 const mobile = $(this).val();
-                const mobileRegex = /^[0-9]{10}$/;
+                const mobileRegex = /^[789]\d{9}$/; // Updated regex for Indian mobile numbers
                 
                 if (!mobileRegex.test(mobile)) {
-                    showFieldError($(this), 'Please enter a valid 10-digit mobile number');
+                    showFieldError($(this), 'Please enter a valid 10-digit Indian mobile number starting with 7, 8, or 9');
                 } else {
                     clearFieldError($(this));
                 }
@@ -1066,7 +1066,7 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
             // Check if profile is complete
             function isProfileComplete() {
                 const requiredFields = {
-                    mobile: /^[0-9]{10}$/,
+                    mobile: /^[789]\d{9}$/,
                     age: value => parseInt(value) >= 18 && parseInt(value) <= 90,
                     qualification: value => value.length > 0,
                     teaching_mode: value => value.length > 0,
@@ -1237,9 +1237,9 @@ $profile_image = $tutor && $tutor['profile_photo'] ? 'uploads/profile_photos/' .
                 
                 // Validate mobile number
                 const mobile = $('#mobile').val();
-                if (!/^[0-9]{10}$/.test(mobile)) {
-                    errors.push('Please enter a valid 10-digit mobile number');
-                    showFieldError($('#mobile'), 'Please enter a valid 10-digit mobile number');
+                if (!/^[789]\d{9}$/.test(mobile)) {
+                    errors.push('Please enter a valid 10-digit Indian mobile number starting with 7, 8, or 9');
+                    showFieldError($('#mobile'), 'Please enter a valid 10-digit Indian mobile number starting with 7, 8, or 9');
                     isValid = false;
                 }
                 

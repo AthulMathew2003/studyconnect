@@ -30,7 +30,14 @@ if ($result->num_rows == 0) {
 $check_tutor->close();
 $_SESSION['back_view'] = 'teacherdashboard.php';
 
-
+// Add this PHP code at the top of the file after session_start()
+$tutor_query = $conn->prepare("SELECT tutor_id FROM tbl_tutors WHERE userid = ?");
+$tutor_query->bind_param("i", $userid);
+$tutor_query->execute();
+$tutor_result = $tutor_query->get_result();
+$tutor = $tutor_result->fetch_assoc();
+$tutor_id = $tutor['tutor_id'];
+$tutor_query->close();
 
 ?>
 
@@ -807,6 +814,268 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
       .popup-content .cancel-connect:hover {
         background: #e8e4ff;
       }
+
+      .request-card {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .request-card.applied::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 0, 0, 0.05) 0%, transparent 50%);
+        pointer-events: none;
+      }
+
+      .applied-badge {
+        position: absolute;
+        top: 20px;
+        right: -35px;
+        background: linear-gradient(135deg, #ff3e3e 0%, #ff0000 100%);
+        color: white;
+        padding: 8px 40px;
+        transform: rotate(45deg);
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        box-shadow: 0 2px 10px rgba(255, 0, 0, 0.2);
+        animation: glow 1.5s ease-in-out infinite alternate;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      }
+
+      @keyframes glow {
+        from {
+          box-shadow: 0 2px 10px rgba(255, 0, 0, 0.2);
+        }
+        to {
+          box-shadow: 0 0 20px rgba(255, 0, 0, 0.4),
+                      0 0 30px rgba(255, 0, 0, 0.2);
+        }
+      }
+
+      .request-card.applied {
+        border-color: rgba(255, 0, 0, 0.2);
+      }
+
+      .request-card.applied:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(255, 0, 0, 0.1);
+      }
+
+      /* My Students Section Styles */
+      .my-students-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .section-header h2 {
+        color: var(--accent-color);
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .section-subtitle {
+        color: #666;
+        font-size: 1.1rem;
+      }
+
+      .students-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2rem;
+        padding: 1rem;
+      }
+
+      .student-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 20px;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(134, 114, 255, 0.1);
+        box-shadow: 0 8px 24px rgba(134, 114, 255, 0.1);
+      }
+
+      .card-glass-effect {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1),
+          rgba(255, 255, 255, 0.05)
+        );
+        backdrop-filter: blur(10px);
+        z-index: 0;
+      }
+
+      .student-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(134, 114, 255, 0.2);
+      }
+
+      .student-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .student-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--accent-color);
+        box-shadow: 0 0 0 4px rgba(134, 114, 255, 0.1);
+      }
+
+      .student-info h3 {
+        font-size: 1.2rem;
+        color: var(--text-color);
+        margin-bottom: 0.3rem;
+      }
+
+      .student-location {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .student-details {
+        background: rgba(134, 114, 255, 0.05);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .detail-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.8rem;
+      }
+
+      .detail-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .detail-label {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .detail-value {
+        color: var(--text-color);
+        font-weight: 500;
+      }
+
+      .student-actions {
+        display: flex;
+        gap: 1rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .action-btn {
+        flex: 1;
+        padding: 0.8rem;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .message-btn {
+        background: var(--accent-color);
+        color: white;
+      }
+
+      .profile-btn {
+        background: rgba(134, 114, 255, 0.1);
+        color: var(--accent-color);
+      }
+
+      .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(134, 114, 255, 0.2);
+      }
+
+      .btn-icon {
+        font-size: 1.2rem;
+      }
+
+      .no-students {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 3rem;
+      }
+
+      .empty-state {
+        background: rgba(134, 114, 255, 0.05);
+        border-radius: 20px;
+        padding: 3rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .empty-state h3 {
+        color: var(--text-color);
+        font-size: 1.5rem;
+      }
+
+      .empty-state p {
+        color: #666;
+      }
+
+      @media (max-width: 768px) {
+        .my-students-container {
+          padding: 1rem;
+        }
+
+        .students-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .student-card {
+          padding: 1rem;
+        }
+
+        .student-actions {
+          flex-direction: column;
+        }
+      }
     </style>
   </head>
   <body>
@@ -816,8 +1085,8 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
         <ul class="nav-links">
           <li><a href="#" data-section="dashboard-content" class="active">Dashboard</a></li>
           <li><a href="#" data-section="student-request-content">Student Request</a></li>
-          <li><a href="#" data-section="messages-content">Messages</a></li>
-          <li><a href="#" data-section="earnings-content">Earnings</a></li>
+          <li><a href="messages.php">Messages</a></li>
+          <li><a href="#" data-section="my-students-content">My Students</a></li>
           <li><a href="#" data-section="settings-content">Settings</a></li>
         </ul>
       </nav>
@@ -880,19 +1149,19 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
 
             <div class="stat-card">
               <div class="stat-header">
-                <h3>Course Completion</h3>
+                <h3> Total Courses </h3>
                 <span class="stat-icon">📊</span>
               </div>
-              <div class="stat-value">87%</div>
-              <div class="stat-trend positive">↑ 5% vs last month</div>
+              <div class="stat-value">25</div>
+              <div class="stat-trend positive"></div>
             </div>
 
             <div class="stat-card">
               <div class="stat-header">
-                <h3>Monthly Earnings</h3>
-                <span class="stat-icon">💰</span>
+                <h3>Total Tutors</h3>
+                <span class="stat-icon"></span>
               </div>
-              <div class="stat-value">$3,240</div>
+              <div class="stat-value">3,240</div>
               <div class="stat-trend positive">↑ 8% this month</div>
             </div>
 
@@ -969,49 +1238,6 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
                   <div class="request-actions">
                     <button class="session-action accept">Accept</button>
                     <button class="session-action decline">Decline</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Recent Student Activity -->
-            <div class="dashboard-card student-activity">
-              <h3>Recent Student Activity</h3>
-              <div class="activity-list">
-                <div class="activity-item">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Student"
-                    class="activity-avatar"
-                  />
-                  <div class="activity-info">
-                    <h4>Sarah Johnson</h4>
-                    <p>Completed Assignment: Quantum Physics Quiz</p>
-                    <span class="activity-time">10 minutes ago</span>
-                  </div>
-                </div>
-                <div class="activity-item">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Student"
-                    class="activity-avatar"
-                  />
-                  <div class="activity-info">
-                    <h4>Michael Chen</h4>
-                    <p>Submitted Project: Chemical Reactions</p>
-                    <span class="activity-time">25 minutes ago</span>
-                  </div>
-                </div>
-                <div class="activity-item">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Student"
-                    class="activity-avatar"
-                  />
-                  <div class="activity-info">
-                    <h4>Emily Williams</h4>
-                    <p>Asked Question in: Calculus Forum</p>
-                    <span class="activity-time">1 hour ago</span>
                   </div>
                 </div>
               </div>
@@ -1100,7 +1326,24 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
           $locationresult = $conn->query("SELECT * FROM tbl_studentlocation WHERE student_id=$studentid");
           $location = $locationresult->fetch_assoc();
 
-          echo '<div class="request-card">';
+          // Get the count of responses for this request
+          $request_id = $request['request_id'];
+          $response_count_query = $conn->prepare("SELECT COUNT(*) as response_count FROM tbl_response WHERE request_id = ?");
+          $response_count_query->bind_param("i", $request_id);
+          $response_count_query->execute();
+          $response_count_result = $response_count_query->get_result();
+          $response_count = $response_count_result->fetch_assoc()['response_count'];
+          $response_count_query->close();
+
+          // Check if tutor has already applied for this request
+          $check_response = $conn->prepare("SELECT response_id FROM tbl_response WHERE request_id = ? AND tutor_id = ?");
+          $check_response->bind_param("ii", $request['request_id'], $tutor_id);
+          $check_response->execute();
+          $response_result = $check_response->get_result();
+          $has_applied = $response_result->num_rows > 0;
+          $check_response->close();
+
+          echo '<div class="request-card' . ($has_applied ? ' applied' : '') . '">';
           echo '<h3 class="student-name">' . htmlspecialchars($user['username']) . '</h3>';
           echo '<p class="requirements">' . htmlspecialchars($request['description']) . '</p>';
           echo '<div class="tags">';
@@ -1114,7 +1357,13 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
           echo '<strong>Start Date:</strong> <span>' . htmlspecialchars($request['start_date']) . '</span>';
           echo '<strong>End Date:</strong> <span>' . htmlspecialchars($request['end_date']) . '</span>';
           echo '</div>';
-          echo '<button class="connect-btn" data-request-id="' . $request['request_id'] . '">Connect with Student</button>';
+
+          if ($has_applied) {
+              echo '<div class="applied-badge">Applied</div>';
+          } else {
+              echo '<button class="connect-btn" data-request-id="' . $request['request_id'] . '" data-responses="' . $response_count . '">Connect with Student</button>';
+          }
+
           echo '</div>';
       }
   } else {
@@ -1125,13 +1374,27 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
 ?>
 </div>
 
-<!-- Add the confirmation popup outside the requests-grid -->
+<!-- Updated confirmation popup -->
 <div class="confirmation-popup" style="display: none;">
     <div class="popup-content">
-      
         <p>Are you sure you want to connect with this student?</p>
-        <button class="confirm-connect">Yes</button>
-        <button class="cancel-connect">No</button>
+        <p class="response-count" style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
+            <span id="applicant-count">0</span> tutors have applied for this request
+        </p>
+        <!-- Add textarea for custom message -->
+        <div style="margin-top: 1rem;">
+            <label for="connect-message" style="display: block; margin-bottom: 0.5rem;">Message to student:</label>
+            <textarea 
+                id="connect-message" 
+                rows="4" 
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--input-color); border-radius: 4px; margin-bottom: 1rem;"
+                placeholder="Enter your message to the student..."
+            >I am interested in helping you with your studies.</textarea>
+        </div>
+        <div style="margin-top: 1rem;">
+            <button class="confirm-connect">Yes</button>
+            <button class="cancel-connect">No</button>
+        </div>
     </div>
 </div>
 
@@ -1140,15 +1403,14 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
         <div id="messages-content" class="content-section">
           <h2>Messages</h2>
           <!-- Messages content will go here -->
+           <h1>hello hi</h1>
         </div>
 
-        <div id="earnings-content" class="content-section">
-          <h2>Earnings</h2>
-          <!-- Earnings content will go here -->
-        </div>
+       
 
         <div id="settings-content" class="content-section">
           <h2>Settings</h2>
+          <h1>hhhdhdhhdhdhdhdhdhd</h1>
           <!-- Settings content will go here -->
         </div>
       </main>
@@ -1158,7 +1420,7 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
     <footer class="main-footer">
       <div class="footer-content">
         <div class="footer-section">
-          <h4>Quick Links</h4>
+          <!-- <h4>Quick Links</h4>
           <ul>
             <li><a href="#">Home</a></li>
             <li><a href="#">About Us</a></li>
@@ -1184,7 +1446,7 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
             <li><a href="#">Copyright Notice</a></li>
           </ul>
         </div>
-      </div>
+      </div> -->
       <div class="footer-bottom">
         <p>&copy; 2024 StudyConnect. All rights reserved.</p>
       </div>
@@ -1224,6 +1486,9 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
         link.addEventListener('click', (event) => {
           event.preventDefault(); // Prevent default anchor behavior
           
+          // Get the target section ID from data-section attribute
+          const targetSectionId = link.getAttribute('data-section');
+          
           // Hide all content sections
           contentSections.forEach(section => {
             section.classList.remove('active');
@@ -1233,7 +1498,7 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
           navLinks.forEach(nav => nav.classList.remove('active'));
 
           // Show the clicked section and add active class to the link
-          const targetSection = document.getElementById(link.getAttribute('data-section'));
+          const targetSection = document.getElementById(targetSectionId);
           if (targetSection) {
             targetSection.classList.add('active');
             link.classList.add('active');
@@ -1263,39 +1528,58 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
 
       // Fetch student requests using AJAX
       function fetchStudentRequests() {
-          fetch('fetch_requests.php')
-              .then(response => response.json())
-              .then(data => {
-                  const requestsGrid = document.querySelector('.requests-grid');
-                  requestsGrid.innerHTML = ''; // Clear existing content
+          fetch('fetch_requests.php', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(response => {
+              if (!response.ok) {
+                  throw new Error('Network response was not ok');
+              }
+              return response.json();
+          })
+          .then(data => {
+              const requestsGrid = document.querySelector('.requests-grid');
+              requestsGrid.innerHTML = ''; // Clear existing content
 
-                  if (data.length > 0) {
-                      data.forEach(request => {
-                          const requestCard = `
-                              <div class="request-card">
-                                  <h3 class="student-name">${request.username}</h3>
-                                  <p class="requirements">${request.description}</p>
-                                  <div class="tags">
-                                      <span class="tag">📚 ${request.subject}</span>
-                                      <span class="tag">💰 $${request.fee_rate}/hour</span>
-                                      <span class="tag">💻 ${request.mode_of_learning}</span>
-                                  </div>
-                                  <div class="request-info">
-                                      <strong>Location:</strong> <span>${request.location}</span>
-                                      <strong>Submitted:</strong> <span>${request.created_at}</span>
-                                      <strong>Start Date:</strong> <span>${request.start_date}</span>
-                                      <strong>End Date:</strong> <span>${request.end_date}</span>
-                                  </div>
-                                  <button class="connect-btn">Connect with Student</button>
+              if (data.length > 0) {
+                  data.forEach(request => {
+                      // Create card with applied class if tutor has already applied
+                      const cardClass = request.has_applied ? 'request-card applied' : 'request-card';
+                      const requestCard = `
+                          <div class="${cardClass}">
+                              <h3 class="student-name">${request.username}</h3>
+                              <p class="requirements">${request.description}</p>
+                              <div class="tags">
+                                  <span class="tag">📚 ${request.subject}</span>
+                                  <span class="tag">💰 $${request.fee_rate}/hour</span>
+                                  <span class="tag">💻 ${request.mode_of_learning}</span>
                               </div>
-                          `;
-                          requestsGrid.innerHTML += requestCard;
-                      });
-                  } else {
-                      requestsGrid.innerHTML = "<p>No student requests found.</p>";
-                  }
-              })
-              .catch(error => console.error('Error fetching requests:', error));
+                              <div class="request-info">
+                                  <strong>Location:</strong> <span>${request.location}</span>
+                                  <strong>Submitted:</strong> <span>${request.created_at}</span>
+                                  <strong>Start Date:</strong> <span>${request.start_date}</span>
+                                  <strong>End Date:</strong> <span>${request.end_date}</span>
+                              </div>
+                              ${request.has_applied ? 
+                                  '<div class="applied-badge">Applied</div>' : 
+                                  `<button class="connect-btn" data-request-id="${request.request_id}" data-responses="${request.response_count}">Connect with Student</button>`
+                              }
+                          </div>
+                      `;
+                      requestsGrid.innerHTML += requestCard;
+                  });
+              } else {
+                  requestsGrid.innerHTML = "<p>No student requests found.</p>";
+              }
+          })
+          .catch(error => {
+              console.error('Error fetching requests:', error);
+              const requestsGrid = document.querySelector('.requests-grid');
+              requestsGrid.innerHTML = "<p>Error loading requests. Please try again later.</p>";
+          });
       }
 
       // Call the function to fetch requests when the page loads
@@ -1339,32 +1623,51 @@ $_SESSION['back_view'] = 'teacherdashboard.php';
       document.addEventListener('click', (event) => {
         if (event.target.classList.contains('connect-btn')) {
           popup.style.display = 'flex';
-          // Store the request ID if needed
+          // Store the request ID and update the response count
           const requestId = event.target.dataset.requestId;
+          const responseCount = event.target.dataset.responses;
           popup.dataset.requestId = requestId;
+          document.getElementById('applicant-count').textContent = responseCount;
         }
       });
 
       // Handle confirmation actions
       document.querySelector('.confirm-connect').addEventListener('click', () => {
-        const requestId = popup.dataset.requestId; // Get the request ID
+        const requestId = popup.dataset.requestId;
+        const message = document.getElementById('connect-message').value.trim();
+        
+        // Validate message
+        if (!message) {
+            alert('Please enter a message for the student.');
+            return;
+        }
+        
         // Send AJAX request to connect with the student
         fetch('connect_student.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ request_id: requestId })
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `request_id=${requestId}&tutor_id=<?php echo $tutor_id; ?>&message=${encodeURIComponent(message)}`
         })
         .then(response => response.json())
         .then(data => {
-          if (data.success) {
-            alert('Connected with the student!'); // Placeholder action
-          } else {
-            alert('Failed to connect: ' + data.message);
-          }
+            if (data.success) {
+                alert('Your response has been sent to the student!');
+                // Optionally update the UI to show the request has been responded to
+                const connectBtn = document.querySelector(`[data-request-id="${requestId}"]`);
+                if (connectBtn) {
+                    connectBtn.disabled = true;
+                    connectBtn.textContent = 'Response Sent';
+                }
+            } else {
+                alert('Failed to connect: ' + data.message);
+            }
         })
         .catch(error => console.error('Error connecting with student:', error));
+        
+        // Reset the message field to default value
+        document.getElementById('connect-message').value = 'I am interested in helping you with your studies.';
         popup.style.display = 'none';
       });
 

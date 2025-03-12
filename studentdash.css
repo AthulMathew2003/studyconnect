@@ -601,3 +601,166 @@ body {
   background: rgba(110, 69, 226, 0.2);
   color: #6e45e2;
 }
+
+.message-card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  position: relative;
+  transition: var(--transition);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.message-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--glow);
+}
+
+.message-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-color), transparent);
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tutor-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tutor-info i {
+  color: var(--accent-color);
+  font-size: 1.25rem;
+}
+
+.tutor-name {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.response-status {
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: rgba(179, 165, 255, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.response-status.pending {
+  background: rgba(255, 159, 67, 0.1);
+  color: #ff9f43;
+}
+
+.response-status.approved {
+  background: rgba(40, 199, 111, 0.1);
+  color: #28c76f;
+}
+
+.response-status.rejected {
+  background: rgba(234, 84, 85, 0.1);
+  color: #ea5455;
+}
+
+.message-content {
+  padding: 1rem 0;
+}
+
+.request-details,
+.response-details {
+  margin-bottom: 1.5rem;
+}
+
+.request-details h4,
+.response-details h4 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.request-details p,
+.response-details p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.message-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.timestamp {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.approve-btn,
+.reject-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--border-radius);
+  border: none;
+  font-weight: 500;
+  transition: var(--transition);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.approve-btn {
+  background: var(--accent-color);
+  color: white;
+}
+
+.reject-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.approve-btn:hover {
+  box-shadow: var(--glow);
+  transform: translateY(-2px);
+}
+
+.reject-btn:hover {
+  background: rgba(179, 165, 255, 0.1);
+  border-color: var(--accent-color);
+}
+
+.no-messages {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+}

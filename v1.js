@@ -4,7 +4,7 @@ const form = document.getElementById("form");
 // Regular expressions for validation
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const passwordRegex = /^.{6,12}$/;
-const nameRegex = /^[A-Za-z\s]+$/; // New regex for name validation
+const nameRegex = /^[A-Za-z][A-Za-z\s]*$/; // Updated regex for name validation
 
 // Function to show error
 const showError = (inputId, message) => {
