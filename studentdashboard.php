@@ -56,7 +56,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                 </a>
                 <a href="#" class="nav-item" data-view="forums">
                     <i class="fas fa-comments"></i>
-                    <span>Messages</span>
+                    <span>Teaching Requests</span>
                 </a>
                 <a href="#" class="nav-item" data-view="calendar">
                     <i class="fas fa-calendar"></i>
@@ -387,7 +387,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
                     if ($result && $result->num_rows > 0) {
                         while ($row = $result->fetch_assoc()) {
-                            $profile_photo = $row['profile_photo'] ? $row['profile_photo'] : 'assets/default-profile.png';
+                            $profile_photo = $row['profile_photo'] ? 'uploads/profile_photos/' . $row['profile_photo'] : 'assets/default-profile.png';
                             ?>
                             <div class="tutor-card">
                                 <div class="tutor-header">
@@ -561,12 +561,52 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
             <div class="dashboard-view" id="resources" style="display: none;">
                 <h1>Available Teachers</h1>
+                
+                <!-- Add filter controls -->
+                <div class="filter-controls">
+                    <div class="filter-wrapper">
+                        <div class="filter-group">
+                            <i class="fas fa-book-open filter-icon"></i>
+                            <select id="subjectFilter">
+                                <option value="">All Subjects</option>
+                                <?php
+                                $sql = "SELECT DISTINCT subject FROM tbl_subject ORDER BY subject";
+                                $result = $conn->query($sql);
+                                while ($row = $result->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($row['subject']) . "'>" . 
+                                         htmlspecialchars($row['subject']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <i class="fas fa-chalkboard-teacher filter-icon"></i>
+                            <select id="teachingModeFilter">
+                                <option value="">All Modes</option>
+                                <option value="Online">Online</option>
+                                <option value="Offline">Offline</option>
+                                <option value="Both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="resources-grid">
                     <?php
-                    // Fetch teacher details from the database with subject information
+                    // Get student_id for the current user
+                    $userid = (int)$_SESSION['userid'];
+                    $query = "SELECT student_id FROM tbl_student WHERE userid = $userid";
+                    $result = $conn->query($query);
+                    $student = $result->fetch_assoc();
+                    $student_id = (int)$student['student_id'];
+
+                    // Modified query to include check for existing tutor requests
                     $sql = "SELECT u.username, u.email, l.pincode, l.city, l.state, l.country, 
-                            t.tutor_id, t.qualification, t.about, t.teaching_mode, t.experience, t.profile_photo,
-                            GROUP_CONCAT(DISTINCT s.subject) as subjects
+                            t.tutor_id, t.qualification, t.about, t.teaching_mode, t.experience, t.profile_photo, t.hourly_rate,
+                            GROUP_CONCAT(DISTINCT s.subject) as subjects,
+                            (SELECT COUNT(*) FROM tbl_tutorrequest tr 
+                             WHERE tr.tutor_id = t.tutor_id 
+                             AND tr.student_id = $student_id) as request_exists
                             FROM users u 
                             JOIN tbl_tutors t ON u.userid = t.userid 
                             JOIN tbl_locations l ON u.userid = l.userid 
@@ -579,9 +619,12 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                     
                     if ($result && $result->num_rows > 0) {
                         while ($row = $result->fetch_assoc()) {
-                            $profile_photo = $row['profile_photo'] ? $row['profile_photo'] : 'assets/default-profile.png';
+                            $profile_photo = $row['profile_photo'] ? 'uploads/profile_photos/' . $row['profile_photo'] : 'assets/default-profile.png';
+                            $subjects = explode(',', $row['subjects']);
                             ?>
-                            <div class="teacher-resource-card">
+                            <div class="teacher-resource-card" 
+                                 data-subjects="<?php echo htmlspecialchars($row['subjects']); ?>"
+                                 data-teaching-mode="<?php echo htmlspecialchars($row['teaching_mode']); ?>">
                                 <div class="teacher-header">
                                     <div class="teacher-photo">
                                         <img src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Teacher Photo">
@@ -624,6 +667,13 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                             <span class="value"><?php echo htmlspecialchars($row['experience']); ?> years</span>
                                         </div>
                                     </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <div>
+                                            <span class="label">Hourly Rate</span>
+                                            <span class="value">$<?php echo htmlspecialchars($row['hourly_rate']); ?></span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="teacher-about">
@@ -632,9 +682,15 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                 </div>
 
                                 <div class="teacher-actions">
-                                    <button class="connect-btn" onclick="connectWithTeacher(<?php echo $row['tutor_id']; ?>)">
-                                        <i class="fas fa-handshake"></i> Connect
-                                    </button>
+                                    <?php if ($row['request_exists'] > 0): ?>
+                                        <button class="connect-btn already-requested" disabled>
+                                            <i class="fas fa-check"></i> Already Requested
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="connect-btn" onclick="connectWithTeacher(<?php echo $row['tutor_id']; ?>)">
+                                            <i class="fas fa-handshake"></i> Connect
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <?php
@@ -983,11 +1039,58 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         }
 
         function connectWithTeacher(tutorId) {
-            // You can implement the connection logic here
-            console.log('Connecting with tutor:', tutorId);
-            // For example, redirect to a connection page or show a modal
-            window.location.href = 'connect_teacher.php?tutor_id=' + tutorId;
+            fetch(`connect_teacher.php?tutor_id=${tutorId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessMessage(data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while connecting with the teacher');
+                });
         }
+
+        // Add filter functionality
+        function filterTeachers() {
+            const selectedSubject = document.getElementById('subjectFilter').value.toLowerCase();
+            const selectedMode = document.getElementById('teachingModeFilter').value;
+            const teachers = document.querySelectorAll('.teacher-resource-card');
+            let visibleCount = 0;
+
+            teachers.forEach(teacher => {
+                const subjects = teacher.dataset.subjects.toLowerCase();
+                const teachingMode = teacher.dataset.teachingMode;
+                
+                const subjectMatch = !selectedSubject || subjects.includes(selectedSubject);
+                const modeMatch = !selectedMode || teachingMode === selectedMode;
+
+                if (subjectMatch && modeMatch) {
+                    teacher.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    teacher.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            const noTeachersDiv = document.querySelector('.no-teachers');
+            if (noTeachersDiv) {
+                if (visibleCount === 0) {
+                    noTeachersDiv.style.display = 'block';
+                    noTeachersDiv.textContent = 'No teachers found matching your filters.';
+                } else {
+                    noTeachersDiv.style.display = 'none';
+                }
+            }
+        }
+
+        // Add event listeners for filters
+        document.getElementById('subjectFilter').addEventListener('change', filterTeachers);
+        document.getElementById('teachingModeFilter').addEventListener('change', filterTeachers);
     </script>
 
     <!-- Add this before closing body tag -->
@@ -1177,8 +1280,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
     .message-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 15px 30px rgba(179, 165, 255, 0.15),
-                    0 5px 10px rgba(179, 165, 255, 0.1);
+        box-shadow: 0 15px 30px rgba(179, 165, 255, 0.15);
     }
 
     .message-header {
@@ -1476,20 +1578,29 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.3s ease;
     }
 
-    .tutor-info h3 {
+    .tutor-resource-card:hover .tutor-photo img {
+        transform: scale(1.1);
+    }
+
+    .tutor-basic-info h3 {
         color: #2d2d2d;
-        font-size: 1.2em;
-        margin-bottom: 5px;
+        font-size: 1.4em;
+        font-weight: 600;
+        margin-bottom: 8px;
+        background: linear-gradient(45deg, #88d3ce, #b3a5ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .location {
         color: #666;
-        font-size: 0.9em;
+        font-size: 0.95em;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
     }
 
     .tutor-details {
@@ -1569,7 +1680,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
     .resources-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 30px;
         padding: 25px;
     }
@@ -1579,15 +1690,16 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         backdrop-filter: blur(10px);
         border: 1px solid rgba(179, 165, 255, 0.2);
         border-radius: 24px;
-        padding: 30px;
+        padding: 25px;
         box-shadow: 0 10px 30px rgba(179, 165, 255, 0.15),
                     0 2px 8px rgba(179, 165, 255, 0.1);
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         position: relative;
         overflow: hidden;
-        min-height: 480px;
+        height: 100%;
         display: flex;
         flex-direction: column;
+        max-height: 600px;
     }
 
     .teacher-resource-card::before {
@@ -1662,52 +1774,35 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
     .teacher-details-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        margin: 25px 0;
-        padding: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+        padding: 15px;
         background: rgba(248, 249, 255, 0.5);
         border-radius: 16px;
         backdrop-filter: blur(5px);
     }
 
     .detail-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .detail-item i {
-        color: #88d3ce;
-        font-size: 1.2em;
-        margin-top: 3px;
-    }
-
-    .detail-item div {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .detail-item .label {
-        font-size: 0.85em;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        min-width: 0;
     }
 
     .detail-item .value {
         color: #2d2d2d;
         font-weight: 500;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .teacher-about {
-        flex-grow: 1;
-        margin: 20px 0;
-        padding: 20px;
+        flex: 1;
+        margin: 15px 0;
+        padding: 15px;
         background: rgba(248, 249, 255, 0.5);
         border-radius: 16px;
         backdrop-filter: blur(5px);
+        overflow-y: auto;
+        max-height: 200px;
     }
 
     .teacher-about h4 {
@@ -1721,6 +1816,9 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         color: #444;
         line-height: 1.6;
         font-size: 0.95em;
+        margin: 0;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
     }
 
     .connect-btn {
@@ -1777,6 +1875,141 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         border-radius: 24px;
         border: 1px solid rgba(179, 165, 255, 0.2);
         box-shadow: 0 10px 30px rgba(179, 165, 255, 0.15);
+    }
+
+    /* Add custom scrollbar styling */
+    .teacher-about::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .teacher-about::-webkit-scrollbar-track {
+        background: rgba(248, 249, 255, 0.5);
+        border-radius: 3px;
+    }
+
+    .teacher-about::-webkit-scrollbar-thumb {
+        background: #88d3ce;
+        border-radius: 3px;
+    }
+
+    /* Add responsive adjustments */
+    @media screen and (max-width: 480px) {
+        .teacher-resource-card {
+            padding: 20px;
+        }
+
+        .teacher-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .teacher-photo {
+            margin: 0 auto;
+        }
+
+        .teacher-details-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Update the filter controls styles */
+    .filter-controls {
+        display: flex;
+        justify-content: center;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 800px;
+    }
+
+    .filter-wrapper {
+        display: flex;
+        gap: 20px;
+        background: linear-gradient(145deg, #ffffff, #f8f9ff);
+        border: 1px solid #e0dbff;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 10px 20px rgba(179, 165, 255, 0.1);
+        width: 100%;
+        position: relative;
+    }
+
+    .filter-wrapper::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #88d3ce, #b3a5ff);
+        border-radius: 16px 16px 0 0;
+        opacity: 0.8;
+    }
+
+    .filter-group {
+        flex: 1;
+        position: relative;
+    }
+
+    .filter-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #b3a5ff;
+        font-size: 1.2em;
+        z-index: 1;
+    }
+
+    .filter-group select {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 1px solid rgba(179, 165, 255, 0.3);
+        border-radius: 25px;
+        background-color: white;
+        color: #2d2d2d;
+        font-size: 0.95em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23b3a5ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+        background-size: 16px;
+    }
+
+    .filter-group select:hover {
+        border-color: #88d3ce;
+        box-shadow: 0 0 0 3px rgba(136, 211, 206, 0.1);
+    }
+
+    .filter-group select:focus {
+        outline: none;
+        border-color: #b3a5ff;
+        box-shadow: 0 0 0 3px rgba(179, 165, 255, 0.2);
+    }
+
+    /* Responsive adjustments */
+    @media screen and (max-width: 768px) {
+        .filter-wrapper {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .filter-controls {
+            padding: 15px;
+        }
+    }
+
+    .connect-btn.already-requested {
+        background: linear-gradient(45deg, #808080, #a0a0a0);
+        cursor: not-allowed;
+        opacity: 0.8;
+    }
+
+    .connect-btn.already-requested:hover {
+        transform: none;
+        box-shadow: none;
     }
     </style>
 </body>

@@ -126,4 +126,16 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_response (
 )
 ";
 $conn->query($sql);
+$sql = "CREATE TABLE IF NOT EXISTS tbl_tutorrequest (
+    tutorrequestid INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    tutor_id INT NOT NULL,
+    description TEXT NOT NULL,
+    feerate DECIMAL(10,2) NOT NULL,
+    status ENUM('approved', 'rejected', 'created') NOT NULL DEFAULT 'created',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES tbl_student(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (tutor_id) REFERENCES tbl_tutors(tutor_id) ON DELETE CASCADE
+)";
+$conn->query($sql);
 ?>

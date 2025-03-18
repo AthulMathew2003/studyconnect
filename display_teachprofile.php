@@ -392,7 +392,7 @@ $subjectsJson = json_encode($subjects);
             <div class="profile-header">
                 <div class="profile-flex">
                     <div class="profile-image-container">
-                        <img id="profile-image-preview" src="<?php echo !empty($tutorData['profile_photo']) ? 'uploads/' . $tutorData['profile_photo'] : '/api/placeholder/150/150'; ?>" alt="Profile Photo" class="profile-image">
+                        <img id="profile-image-preview" src="<?php echo !empty($tutorData['profile_photo']) ? 'uploads/profile_photos/' . $tutorData['profile_photo'] : 'api/placeholder/150/150'; ?>" alt="Profile Photo" class="profile-image">
                         <label for="profile_photo" class="profile-image-overlay">
                             
                         </label>
@@ -559,7 +559,7 @@ $subjectsJson = json_encode($subjects);
         document.getElementById('country').value = '<?php echo $tutorData['country'] ?? ""; ?>';
 
         // Set profile image if exists, otherwise use placeholder
-        const profileImage = '<?php echo !empty($tutorData['profile_photo']) ? "uploads/" . $tutorData['profile_photo'] : "/api/placeholder/150/150"; ?>';
+        const profileImage = '<?php echo !empty($tutorData['profile_photo']) ? "uploads/profile_photos/" . $tutorData['profile_photo'] : "api/placeholder/150/150"; ?>';
         if (profileImage) {
             document.getElementById('profile-image-preview').src = profileImage;
         }

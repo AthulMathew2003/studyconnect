@@ -117,29 +117,28 @@ $tutor_query->close();
       }
 
       .nav-links {
-        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
       }
 
-      .nav-links li {
-        margin-bottom: 1rem;
-      }
-
-      .nav-links a {
-        color: var(--text-color);
-        text-decoration: none;
+      .nav-link {
         display: flex;
         align-items: center;
+        gap: 0.8rem;
         padding: 0.8rem;
+        color: var(--text-color);
+        text-decoration: none;
         border-radius: 8px;
         transition: 0.3s;
       }
 
-      .nav-links a:hover {
+      .nav-link:hover {
         background: var(--input-color);
         color: var(--accent-color);
       }
 
-      .nav-links a.active {
+      .nav-link.active {
         background: var(--accent-color);
         color: var(--base-color);
       }
@@ -797,6 +796,11 @@ $tutor_query->close();
         transition: all 0.3s ease;
       }
 
+      .popup-content .confirm-connect {
+        background: var(--accent-color);
+        color: white;
+      }
+
       .popup-content .confirm-connect:hover {
         background: #7561ff;
       }
@@ -1071,41 +1075,6 @@ $tutor_query->close();
           flex-direction: column;
         }
       }
-
-      .nav-links {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        padding: 0.8rem;
-        color: var(--text-color);
-        text-decoration: none;
-        border-radius: 8px;
-        transition: 0.3s;
-      }
-
-      .nav-link:hover {
-        background: var(--input-color);
-        color: var(--accent-color);
-      }
-
-      .nav-link.active {
-        background: var(--accent-color);
-        color: var(--base-color);
-      }
-
-      .content-section {
-        display: none;
-      }
-
-      .content-section.active {
-        display: block;
-      }
     </style>
   </head>
   <body>
@@ -1113,19 +1082,19 @@ $tutor_query->close();
       <nav class="sidebar">
         <div class="sidebar-logo">StudyConnect</div>
         <div class="nav-links">
-          <a href="#" class="nav-link active" onclick="showContent('dashboard')">
+          <a href="#" class="nav-link active" onclick="showContent('dashboard-content')">
             <i class="fas fa-home"></i> Dashboard
           </a>
-          <a href="#" class="nav-link" onclick="showContent('student-requests')">
-            <i class="fas fa-user-graduate"></i> Find a Student
+          <a href="#" class="nav-link" onclick="showContent('student-request-content')">
+            <i class="fas fa-user-graduate"></i> Student Requests
           </a>
-          <a href="#" class="nav-link" onclick="showContent('messages')">
+          <a href="#" class="nav-link" onclick="showContent('messages-content')">
             <i class="fas fa-comments"></i> Messages
           </a>
-          <a href="#" class="nav-link" onclick="showContent('my-students')">
+          <a href="#" class="nav-link" onclick="showContent('my-students-content')">
             <i class="fas fa-users"></i> My Students
           </a>
-          <a href="#" class="nav-link" onclick="showContent('settings')">
+          <a href="#" class="nav-link" onclick="showContent('settings-content')">
             <i class="fas fa-cog"></i> Settings
           </a>
         </div>
@@ -1174,42 +1143,121 @@ $tutor_query->close();
             </div>
           </div>
         </header>
-      
+        <!-- Content sections -->
         <div id="dashboard-content" class="content-section active">
           <div class="dashboard-grid">
+            <!-- Quick Stats Section -->
             <div class="stat-card">
               <div class="stat-header">
                 <h3>Active Students</h3>
-                <span>📚</span>
+                <span class="stat-icon">👥</span>
               </div>
-              <div class="stat-value">24</div>
-              <div class="stat-trend positive">↑ 12% from last month</div>
+              <div class="stat-value">256</div>
+              <div class="stat-trend positive">↑ 12% this month</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-header">
-                <h3>Total Earnings</h3>
-                <span>💰</span>
+                <h3> Total Courses </h3>
+                <span class="stat-icon">📊</span>
               </div>
-              <div class="stat-value"><?php echo $coin_balance; ?> coins</div>
-              <div class="stat-trend positive">↑ 8% from last month</div>
+              <div class="stat-value">25</div>
+              <div class="stat-trend positive"></div>
             </div>
 
             <div class="stat-card">
               <div class="stat-header">
-                <h3>Rating</h3>
-                <span>⭐</span>
+                <h3>Total Tutors</h3>
+                <span class="stat-icon"></span>
+              </div>
+              <div class="stat-value">3,240</div>
+              <div class="stat-trend positive">↑ 8% this month</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <h3>Average Rating</h3>
+                <span class="stat-icon">⭐</span>
               </div>
               <div class="stat-value">4.8</div>
-              <div class="stat-trend neutral">120 reviews</div>
+              <div class="stat-trend neutral">Same as last month</div>
+            </div>
+
+            <!-- Recent Requests -->
+            <div class="dashboard-card recent-requests">
+              <h3>Recent Requests</h3>
+              <div class="session-list">
+                <div class="session-item">
+                  <img
+                    src="/api/placeholder/40/40"
+                    alt="Student"
+                    class="activity-avatar"
+                  />
+                  <div class="session-info">
+                    <h4>Emma Watson</h4>
+                    <p>Mathematics • One-on-One • Online</p>
+                    <div class="request-details">
+                      <span class="mode-tag online">💻 Online</span>
+                      <span class="schedule-tag">📅 Flexible Schedule</span>
+                      <span class="duration-tag">⏱️ 1 hour/session</span>
+                    </div>
+                  </div>
+                  <div class="request-actions">
+                    <button class="session-action accept">Accept</button>
+                    <button class="session-action decline">Decline</button>
+                  </div>
+                </div>
+
+                <div class="session-item">
+                  <img
+                    src="/api/placeholder/40/40"
+                    alt="Student"
+                    class="activity-avatar"
+                  />
+                  <div class="session-info">
+                    <h4>James Smith</h4>
+                    <p>Physics • Group Study • In-Person</p>
+                    <div class="request-details">
+                      <span class="mode-tag in-person">🏫 In-Person</span>
+                      <span class="schedule-tag">📅 Mon, Wed, Fri</span>
+                      <span class="duration-tag">⏱️ 2 hours/session</span>
+                    </div>
+                  </div>
+                  <div class="request-actions">
+                    <button class="session-action accept">Accept</button>
+                    <button class="session-action decline">Decline</button>
+                  </div>
+                </div>
+
+                <div class="session-item">
+                  <img
+                    src="/api/placeholder/40/40"
+                    alt="Student"
+                    class="activity-avatar"
+                  />
+                  <div class="session-info">
+                    <h4>Sophie Chen</h4>
+                    <p>Chemistry • One-on-One • Hybrid</p>
+                    <div class="request-details">
+                      <span class="mode-tag hybrid">🔄 Hybrid</span>
+                      <span class="schedule-tag">📅 Weekends</span>
+                      <span class="duration-tag">⏱️ 1.5 hours/session</span>
+                    </div>
+                  </div>
+                  <div class="request-actions">
+                    <button class="session-action accept">Accept</button>
+                    <button class="session-action decline">Decline</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div id="student-requests-content" class="content-section">
-        <div class="requests-container">
+
+        <div id="student-request-content" class="content-section">
+          <div class="requests-container">
             <div class="section-header">
-              <h2>Find a Student</h2>
+              <h2>Student Requests</h2>
             </div>
             
             <div class="filters-container">
@@ -1360,227 +1408,137 @@ $tutor_query->close();
 </div>
 
         </div>
-        </div>
-        
-        <div id="messages-content" class="content-section">
-          <div class="messages-container" style="padding: 2rem;">
-            <div class="section-header">
-              <h2>Messages</h2>
-            </div>
-            <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-              <div style="padding: 1rem; border-bottom: 1px solid var(--input-color);">
-                <input type="text" placeholder="Search messages..." style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
-              </div>
-              <div class="message-list">
-                <div style="padding: 1rem; display: flex; gap: 1rem; border-bottom: 1px solid var(--input-color); cursor: pointer; transition: 0.3s;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='white'">
-                  <img src="1.webp" alt="Student" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                  <div style="flex: 1;">
-                    <h4 style="margin-bottom: 0.3rem;">Sarah Johnson</h4>
-                    <p style="color: #666; font-size: 0.9rem;">Hello, when can we start our next lesson?</p>
-                  </div>
-                  <div style="text-align: right;">
-                    <span style="font-size: 0.8rem; color: #666;">2:30 PM</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div id="my-students-content" class="content-section">
-          <div class="my-students-container">
-            <div class="section-header">
-              <h2>My Students</h2>
-              <p class="section-subtitle">Manage your current students and their progress</p>
-            </div>
-            <div class="students-grid">
-              <?php
-              // Prepare query to get approved responses for the logged-in tutor
-              $stmt = $conn->prepare("
-                  SELECT r.*, req.*, s.*, u.username, u.email, sl.*
-                  FROM tbl_response r
-                  JOIN tbl_request req ON r.request_id = req.request_id
-                  JOIN tbl_student s ON req.student_id = s.student_id
-                  JOIN users u ON s.userid = u.userid
-                  JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
-                  WHERE r.tutor_id = ? AND r.status = 'approved'
-              ");
-              
-              $stmt->bind_param("i", $tutor_id);
-              $stmt->execute();
-              $result = $stmt->get_result();
 
-              if ($result->num_rows > 0) {
-                  while ($row = $result->fetch_assoc()) {
-                      ?>
-                      <div class="student-card">
-                        <div class="student-header">
-                          <img src="<?php echo !empty($row['profilephoto']) ? htmlspecialchars($row['profilephoto']) : '1.webp'; ?>" 
-                               alt="Student" class="student-avatar">
-                          <div class="student-info">
-                            <h3><?php echo htmlspecialchars($row['username']); ?></h3>
-                            <div class="student-location">📍 <?php echo htmlspecialchars($row['city'] . ', ' . $row['country']); ?></div>
-                          </div>
-                        </div>
-                        <div class="student-details">
-                          <div class="detail-item">
-                            <span class="detail-label">Subject</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($row['subject']); ?></span>
-                          </div>
-                          <div class="detail-item">
-                            <span class="detail-label">Mode</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($row['mode_of_learning']); ?></span>
-                          </div>
-                          <div class="detail-item">
-                            <span class="detail-label">Fee Rate</span>
-                            <span class="detail-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
-                          </div>
-                        </div>
-                        <div class="student-actions">
-                          <button class="action-btn message-btn" onclick="startChat('<?php echo htmlspecialchars($row['username']); ?>')">Message</button>
-                          <button class="action-btn profile-btn" onclick="window.location.href='display_studentprofile.php?student_id=<?php echo $row['student_id']; ?>'">View Profile</button>
-                        </div>
-                      </div>
-                      <?php
-                  }
-              } else {
-                  ?>
-                  <div class="no-students">
-                    <div class="empty-state">
-                      <div class="empty-icon">👥</div>
-                      <h3>No Students Yet</h3>
-                      <p>You don't have any approved student connections yet. Check the Student Requests section to connect with students.</p>
-                    </div>
-                  </div>
-                  <?php
-              }
-              $stmt->close();
-              ?>
-            </div>
-          </div>
+        <div id="messages-content" class="content-section">
+          <h2>Messages</h2>
+          <!-- Messages content will go here -->
+           <h1>hello hi</h1>
         </div>
-        
+
+       
+
         <div id="settings-content" class="content-section">
-          <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h2 style="margin-bottom: 2rem; color: var(--accent-color);">Settings</h2>
-            
-            <div style="margin-bottom: 2rem;">
-              <h3 style="margin-bottom: 1rem;">Profile Settings</h3>
-              <div style="display: grid; gap: 1rem;">
-                <div>
-                  <label style="display: block; margin-bottom: 0.5rem;">Display Name</label>
-                  <input type="text" value="<?php echo htmlspecialchars($_SESSION['username']); ?>" style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
-                </div>
-                <div>
-                  <label style="display: block; margin-bottom: 0.5rem;">Email</label>
-                  <input type="email" value="user@example.com" style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
-                </div>
-              </div>
-            </div>
-            
-            <div style="margin-bottom: 2rem;">
-              <h3 style="margin-bottom: 1rem;">Notification Settings</h3>
-              <div style="display: grid; gap: 0.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                  <input type="checkbox" checked> Email notifications for new messages
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                  <input type="checkbox" checked> Email notifications for new student requests
-                </label>
-              </div>
-            </div>
-            
-            <button style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; cursor: pointer;">Save Changes</button>
-          </div>
+          <h2>Settings</h2>
+          <h1>hhhdhdhhdhdhdhdhdhd</h1>
+          <!-- Settings content will go here -->
         </div>
       </main>
     </div>
 
+    <!-- Add footer before closing body tag -->
+    <footer class="main-footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <!-- <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Contact</a></li>
+            <li><a href="#">Help Center</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#">Teaching Guide</a></li>
+            <li><a href="#">Best Practices</a></li>
+            <li><a href="#">Community Forums</a></li>
+            <li><a href="#">Blog</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Cookie Policy</a></li>
+            <li><a href="#">Copyright Notice</a></li>
+          </ul>
+        </div>
+      </div> -->
+      <div class="footer-bottom">
+        <p>&copy; 2024 StudyConnect. All rights reserved.</p>
+      </div>
+    </footer>
+
     <script>
-    // Add these functions at the beginning of your script tag
-    document.addEventListener('DOMContentLoaded', function() {
-        const menuToggle = document.querySelector('.menu-toggle');
-        const sidebar = document.querySelector('.sidebar');
-        const mainContent = document.querySelector('.main-content');
+      // Toggle sidebar visibility
+      const menuToggle = document.querySelector('.menu-toggle');
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
 
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-            mainContent.classList.toggle('active');
-        });
+      menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        mainContent.classList.toggle('active');
+      });
 
-        // Close sidebar when clicking outside (optional)
-        document.addEventListener('click', function(event) {
-            if (!sidebar.contains(event.target) && !menuToggle.contains(event.target)) {
-                sidebar.classList.remove('active');
-                mainContent.classList.remove('active');
-            }
-        });
-    });
+      // Handle dropdown menu visibility
+      const profileDropdown = document.querySelector('.profile-dropdown');
+      const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
 
-    //  // Handle dropdown menu visibility
-    //  const profileDropdown = document.querySelector('.profile-dropdown');
-    //   const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
+      profileDropdown.addEventListener('click', () => {
+        dropdownMenu.classList.toggle('active');
+      });
 
-    //   profileDropdown.addEventListener('click', () => {
-    //     dropdownMenu.classList.toggle('active');
-    //   });
+      // Close dropdown when clicking outside
+      window.addEventListener('click', (event) => {
+        if (!profileDropdown.contains(event.target)) {
+          dropdownMenu.classList.remove('active');
+        }
+      });
 
-    function showContent(contentId) {
-        // Remove active class from all nav links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        
-        // Add active class to clicked nav link
-        event.target.closest('.nav-link').classList.add('active');
-        
+      // Manage active state of navigation links and show respective content
+      const navLinks = document.querySelectorAll('.nav-link');
+      const contentSections = document.querySelectorAll('.content-section');
+
+      function showContent(contentId) {
         // Hide all content sections
-        document.querySelectorAll('.content-section').forEach(section => {
-            section.classList.remove('active');
+        const contentSections = document.querySelectorAll('.content-section');
+        contentSections.forEach(section => {
+          section.classList.remove('active');
         });
-        
-        // Show selected content section
-        document.getElementById(contentId + '-content').classList.add('active');
-    }
 
-    // Add this to your existing CSS
-    const additionalStyles = `
-        .nav-links {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        // Remove active class from all nav links
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+        });
+
+        // Show the selected content section
+        const selectedContent = document.getElementById(contentId);
+        if (selectedContent) {
+          selectedContent.classList.add('active');
         }
 
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.8rem;
-            color: var(--text-color);
-            text-decoration: none;
-            border-radius: 8px;
-            transition: 0.3s;
+        // Add active class to clicked nav link
+        const clickedLink = document.querySelector(`[onclick="showContent('${contentId}')"]`);
+        if (clickedLink) {
+          clickedLink.classList.add('active');
         }
+      }
 
-        .nav-link:hover {
-            background: var(--input-color);
-            color: var(--accent-color);
-        }
+      // Handle dropdown menu visibility for ratings and coins
+      const ratingsDropdown = document.querySelector('.ratings-reviews .dropdown-menu');
+      const coinDropdown = document.querySelector('.coin-wallet .dropdown-menu');
 
-        .nav-link.active {
-            background: var(--accent-color);
-            color: var(--base-color);
-        }
+      document.querySelector('.ratings-reviews').addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent event from bubbling up
+        ratingsDropdown.classList.toggle('active');
+      });
 
-        .content-section {
-            display: none;
-        }
+      document.querySelector('.coin-wallet').addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent event from bubbling up
+        coinDropdown.classList.toggle('active');
+      });
 
-        .content-section.active {
-            display: block;
-        }
-    `;
-    function fetchStudentRequests() {
+      // Close dropdowns when clicking outside
+      window.addEventListener('click', () => {
+        ratingsDropdown.classList.remove('active');
+        coinDropdown.classList.remove('active');
+      });
+
+      // Fetch student requests using AJAX
+      function fetchStudentRequests() {
           fetch('fetch_requests.php', {
               method: 'POST',
               headers: {
@@ -1734,41 +1692,6 @@ $tutor_query->close();
           popup.style.display = 'none';
         }
       });
-    // Add the styles to the existing style tag
-    document.querySelector('style').textContent += additionalStyles;
-    
-    // Add this JavaScript after your existing script tag content
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get all dropdown containers
-        const dropdowns = document.querySelectorAll('.ratings-reviews, .coin-wallet, .profile-dropdown');
-        
-        // Add click handlers to each dropdown
-        dropdowns.forEach(dropdown => {
-            dropdown.addEventListener('click', function(e) {
-                // Close all other dropdowns first
-                dropdowns.forEach(other => {
-                    if (other !== dropdown) {
-                        other.querySelector('.dropdown-menu').classList.remove('active');
-                    }
-                });
-                
-                // Toggle current dropdown
-                const menu = this.querySelector('.dropdown-menu');
-                menu.classList.toggle('active');
-                
-                // Stop event from bubbling up to document
-                e.stopPropagation();
-            });
-        });
-        
-        // Close all dropdowns when clicking outside
-        document.addEventListener('click', function() {
-            dropdowns.forEach(dropdown => {
-                dropdown.querySelector('.dropdown-menu').classList.remove('active');
-            });
-        });
-    });
-    
     </script>
   </body>
 </html>
