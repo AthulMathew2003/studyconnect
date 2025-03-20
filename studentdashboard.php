@@ -365,8 +365,8 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                     $student = $result->fetch_assoc();
                     $student_id = (int)$student['student_id'];
 
-                    // Fetch approved responses with tutor details
-                    $query = "
+                    // First query: Fetch approved responses (existing tutors)
+                    $query1 = "
                         SELECT r.*, req.subject, req.description as request_description, req.fee_rate,
                                t.*, u.username as tutor_name, u.email as tutor_email, u.userid as tutor_userid,
                                l.city, l.state,
@@ -383,65 +383,208 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                         GROUP BY r.response_id
                         ORDER BY r.created_at DESC
                     ";
-                    $result = $conn->query($query);
+                    
+                    // Second query: Fetch approved tutor requests
+                    $query2 = "
+                        SELECT tr.*, t.*, u.username as tutor_name, u.email as tutor_email, 
+                               u.userid as tutor_userid, l.city, l.state,
+                               GROUP_CONCAT(s.subject) as subjects
+                        FROM tbl_tutorrequest tr
+                        INNER JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
+                        INNER JOIN users u ON t.userid = u.userid
+                        LEFT JOIN tbl_locations l ON u.userid = l.userid
+                        LEFT JOIN tbl_tutorsubject ts ON t.tutor_id = ts.tutor_id
+                        LEFT JOIN tbl_subject s ON ts.subject_id = s.subject_id
+                        WHERE tr.student_id = $student_id 
+                        AND tr.status = 'approved'
+                        GROUP BY tr.tutorrequestid
+                        ORDER BY tr.created_at DESC
+                    ";
 
-                    if ($result && $result->num_rows > 0) {
-                        while ($row = $result->fetch_assoc()) {
-                            $profile_photo = $row['profile_photo'] ? 'uploads/profile_photos/' . $row['profile_photo'] : 'assets/default-profile.png';
-                            ?>
-                            <div class="tutor-card">
-                                <div class="tutor-header">
-                                    <div class="tutor-photo">
-                                        <img src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Tutor Photo">
-                                    </div>
-                                    <div class="tutor-info">
-                                        <h3><?php echo htmlspecialchars($row['tutor_name']); ?></h3>
-                                        <p class="location">
-                                            <i class="fas fa-map-marker-alt"></i>
-                                            <?php echo htmlspecialchars($row['city'] . ', ' . $row['state']); ?>
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <div class="tutor-details">
-                                    <div class="detail-item">
-                                        <i class="fas fa-graduation-cap"></i>
-                                        <span><?php echo htmlspecialchars($row['qualification']); ?></span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <i class="fas fa-book"></i>
-                                        <span><?php echo htmlspecialchars($row['subject']); ?></span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span><?php echo htmlspecialchars($row['experience']); ?> years experience</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <i class="fas fa-dollar-sign"></i>
-                                        <span>$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
-                                    </div>
-                                </div>
+                    $result1 = $conn->query($query1);
+                    $result2 = $conn->query($query2);
 
-                                <div class="tutor-about">
-                                    <p><strong>Request Description:</strong><br>
-                                    <?php echo nl2br(htmlspecialchars($row['request_description'])); ?></p>
-                                    <p><strong>Tutor Response:</strong><br>
-                                    <?php echo nl2br(htmlspecialchars($row['message'])); ?></p>
-                                </div>
+                    if (($result1 && $result1->num_rows > 0) || ($result2 && $result2->num_rows > 0)) {
+                        // Display tutors from approved responses
+                        if ($result1 && $result1->num_rows > 0) {
+                            echo '<h2 class="section-title">Tutors from Your Requests</h2>';
+                            while ($row = $result1->fetch_assoc()) {
+                                $profile_photo = $row['profile_photo'] ? 'uploads/profile_photos/' . $row['profile_photo'] : 'assets/default-profile.png';
+                                ?>
+                                <div class="tutor-card response-card">
+                                    <div class="card-type-badge">Request Response</div>
+                                    <div class="tutor-header">
+                                        <div class="tutor-photo">
+                                            <img src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Tutor Photo">
+                                        </div>
+                                        <div class="tutor-info">
+                                            <h3><?php echo htmlspecialchars($row['tutor_name']); ?></h3>
+                                            <p class="location">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <?php echo htmlspecialchars($row['city'] . ', ' . $row['state']); ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="tutor-details-grid">
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-graduation-cap"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Qualification</span>
+                                                <span class="detail-value"><?php echo htmlspecialchars($row['qualification']); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-book"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Subject</span>
+                                                <span class="detail-value"><?php echo htmlspecialchars($row['subject']); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-clock"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Experience</span>
+                                                <span class="detail-value"><?php echo htmlspecialchars($row['experience']); ?> years</span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-dollar-sign"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Agreed Rate</span>
+                                                <span class="detail-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-tag"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Standard Rate</span>
+                                                <span class="detail-value">$<?php echo htmlspecialchars($row['hourly_rate']); ?>/hour</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                <div class="tutor-actions">
-                                    <button class="message-btn" onclick="startChat(<?php echo $row['tutor_id']; ?>)">
-                                        <i class="fas fa-comment"></i> Message
-                                    </button>
-                                    <form action="display_teachprofile.php" method="POST" style="flex: 1;">
-                                        <input type="hidden" name="tutor_userid" value="<?php echo $row['tutor_userid']; ?>">
-                                        <button type="submit" class="profile-btn">
-                                            <i class="fas fa-user"></i> View Profile
+                                    <div class="tutor-about">
+                                        <p><strong>Request Description:</strong><br>
+                                        <?php echo nl2br(htmlspecialchars($row['request_description'])); ?></p>
+                                        <p><strong>Tutor Response:</strong><br>
+                                        <?php echo nl2br(htmlspecialchars($row['message'])); ?></p>
+                                    </div>
+
+                                    <div class="tutor-actions">
+                                        <button class="message-btn" onclick="startChat(<?php echo $row['tutor_id']; ?>)">
+                                            <i class="fas fa-comment"></i> Message
                                         </button>
-                                    </form>
+                                        <form action="display_teachprofile.php" method="POST" style="flex: 1;">
+                                            <input type="hidden" name="tutor_userid" value="<?php echo $row['tutor_userid']; ?>">
+                                            <button type="submit" class="profile-btn">
+                                                <i class="fas fa-user"></i> View Profile
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
-                            </div>
-                            <?php
+                                <?php
+                            }
+                        }
+
+                        // Display tutors from direct requests
+                        if ($result2 && $result2->num_rows > 0) {
+                            echo '<h2 class="section-title">Direct Tutor Connections</h2>';
+                            while ($row = $result2->fetch_assoc()) {
+                                $profile_photo = $row['profile_photo'] ? 'uploads/profile_photos/' . $row['profile_photo'] : 'assets/default-profile.png';
+                                ?>
+                                <div class="tutor-card direct-request-card">
+                                    <div class="card-type-badge">Direct Request</div>
+                                    <div class="tutor-header">
+                                        <div class="tutor-photo">
+                                            <img src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Tutor Photo">
+                                        </div>
+                                        <div class="tutor-info">
+                                            <h3><?php echo htmlspecialchars($row['tutor_name']); ?></h3>
+                                            <p class="location">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <?php echo htmlspecialchars($row['city'] . ', ' . $row['state']); ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="tutor-details-grid">
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-graduation-cap"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Qualification</span>
+                                                <span class="detail-value"><?php echo htmlspecialchars($row['qualification']); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-book"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Subjects</span>
+                                                <span class="detail-value"><?php echo htmlspecialchars($row['subjects']); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-clock"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Experience</span>
+                                                <span class="detail-value"><?php echo htmlspecialchars($row['experience']); ?> years</span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-dollar-sign"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Agreed Rate</span>
+                                                <span class="detail-value">$<?php echo htmlspecialchars($row['feerate']); ?>/hour</span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-item">
+                                            <div class="detail-icon">
+                                                <i class="fas fa-tag"></i>
+                                            </div>
+                                            <div class="detail-content">
+                                                <span class="detail-label">Standard Rate</span>
+                                                <span class="detail-value">$<?php echo htmlspecialchars($row['hourly_rate']); ?>/hour</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="tutor-about">
+                                        <p><strong>Request Description:</strong><br>
+                                        <?php echo nl2br(htmlspecialchars($row['description'])); ?></p>
+                                    </div>
+
+                                    <div class="tutor-actions">
+                                        <button class="message-btn" onclick="startChat(<?php echo $row['tutor_id']; ?>)">
+                                            <i class="fas fa-comment"></i> Message
+                                        </button>
+                                        <form action="display_teachprofile.php" method="POST" style="flex: 1;">
+                                            <input type="hidden" name="tutor_userid" value="<?php echo $row['tutor_userid']; ?>">
+                                            <button type="submit" class="profile-btn">
+                                                <i class="fas fa-user"></i> View Profile
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                <?php
+                            }
                         }
                     } else {
                         echo '<div class="no-tutors">No approved tutors found yet.</div>';
@@ -563,7 +706,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                 <h1>Available Teachers</h1>
                 
                 <!-- Add filter controls -->
-                <div class="filter-controls">
+                 <div class="filter-controls">
                     <div class="filter-wrapper">
                         <div class="filter-group">
                             <i class="fas fa-book-open filter-icon"></i>
@@ -600,19 +743,26 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                     $student = $result->fetch_assoc();
                     $student_id = (int)$student['student_id'];
 
-                    // Modified query to include check for existing tutor requests
+                    // Modified query to exclude tutors with approved requests
                     $sql = "SELECT u.username, u.email, l.pincode, l.city, l.state, l.country, 
                             t.tutor_id, t.qualification, t.about, t.teaching_mode, t.experience, t.profile_photo, t.hourly_rate,
                             GROUP_CONCAT(DISTINCT s.subject) as subjects,
                             (SELECT COUNT(*) FROM tbl_tutorrequest tr 
                              WHERE tr.tutor_id = t.tutor_id 
-                             AND tr.student_id = $student_id) as request_exists
+                             AND tr.student_id = $student_id
+                             AND (tr.status = 'created' OR tr.status = 'approved')) as request_exists
                             FROM users u 
                             JOIN tbl_tutors t ON u.userid = t.userid 
                             JOIN tbl_locations l ON u.userid = l.userid 
                             LEFT JOIN tbl_tutorsubject ts ON t.tutor_id = ts.tutor_id
                             LEFT JOIN tbl_subject s ON ts.subject_id = s.subject_id
                             WHERE u.role = 'teacher'
+                            AND t.tutor_id NOT IN (
+                                SELECT tr.tutor_id 
+                                FROM tbl_tutorrequest tr 
+                                WHERE tr.student_id = $student_id 
+                                AND tr.status = 'approved'
+                            )
                             GROUP BY t.tutor_id";
                     
                     $result = $conn->query($sql);
@@ -640,38 +790,48 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
                                 <div class="teacher-details-grid">
                                     <div class="detail-item">
-                                        <i class="fas fa-graduation-cap"></i>
-                                        <div>
-                                            <span class="label">Qualification</span>
-                                            <span class="value"><?php echo htmlspecialchars($row['qualification']); ?></span>
+                                        <div class="detail-icon">
+                                            <i class="fas fa-graduation-cap"></i>
+                                        </div>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Qualification</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($row['qualification']); ?></span>
                                         </div>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-book"></i>
-                                        <div>
-                                            <span class="label">Subjects</span>
-                                            <span class="value"><?php echo htmlspecialchars($row['subjects']); ?></span>
+                                        <div class="detail-icon">
+                                            <i class="fas fa-book"></i>
+                                        </div>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Subjects</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($row['subjects']); ?></span>
                                         </div>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-chalkboard-teacher"></i>
-                                        <div>
-                                            <span class="label">Teaching Mode</span>
-                                            <span class="value"><?php echo htmlspecialchars($row['teaching_mode']); ?></span>
+                                        <div class="detail-icon">
+                                            <i class="fas fa-chalkboard-teacher"></i>
+                                        </div>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Teaching Mode</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($row['teaching_mode']); ?></span>
                                         </div>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-clock"></i>
-                                        <div>
-                                            <span class="label">Experience</span>
-                                            <span class="value"><?php echo htmlspecialchars($row['experience']); ?> years</span>
+                                        <div class="detail-icon">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Experience</span>
+                                            <span class="detail-value"><?php echo htmlspecialchars($row['experience']); ?> years</span>
                                         </div>
                                     </div>
                                     <div class="detail-item">
-                                        <i class="fas fa-dollar-sign"></i>
-                                        <div>
-                                            <span class="label">Hourly Rate</span>
-                                            <span class="value">$<?php echo htmlspecialchars($row['hourly_rate']); ?></span>
+                                        <div class="detail-icon">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </div>
+                                        <div class="detail-content">
+                                            <span class="detail-label">Hourly Rate</span>
+                                            <span class="detail-value">$<?php echo htmlspecialchars($row['hourly_rate']); ?></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1603,175 +1763,6 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         gap: 6px;
     }
 
-    .tutor-details {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-
-    .detail-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #666;
-    }
-
-    .detail-item i {
-        color: #b3a5ff;
-    }
-
-    .tutor-about {
-        color: #666;
-        font-size: 0.95em;
-        line-height: 1.6;
-        margin-bottom: 20px;
-        max-height: 80px;
-        overflow-y: auto;
-    }
-
-    .tutor-actions {
-        display: flex;
-        gap: 15px;
-    }
-
-    .message-btn,
-    .profile-btn {
-        flex: 1;
-        padding: 10px;
-        border: none;
-        border-radius: 25px;
-        font-size: 0.9em;
-        font-weight: 500;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        transition: all 0.3s ease;
-    }
-
-    .message-btn {
-        background: linear-gradient(135deg, #88d3ce, #6bc7c0);
-        color: white;
-    }
-
-    .profile-btn {
-        background: linear-gradient(135deg, #b3a5ff, #9f8fff);
-        color: white;
-    }
-
-    .message-btn:hover,
-    .profile-btn:hover {
-        transform: translateY(-2px);
-        filter: brightness(1.1);
-    }
-
-    .no-tutors {
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 50px;
-        color: #666;
-        font-size: 1.1em;
-        background: linear-gradient(145deg, #ffffff, #f8f9ff);
-        border-radius: 16px;
-        border: 1px solid #e0dbff;
-    }
-
-    .resources-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 30px;
-        padding: 25px;
-    }
-
-    .teacher-resource-card {
-        background: linear-gradient(165deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 255, 0.9));
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(179, 165, 255, 0.2);
-        border-radius: 24px;
-        padding: 25px;
-        box-shadow: 0 10px 30px rgba(179, 165, 255, 0.15),
-                    0 2px 8px rgba(179, 165, 255, 0.1);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        position: relative;
-        overflow: hidden;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        max-height: 600px;
-    }
-
-    .teacher-resource-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 5px;
-        background: linear-gradient(90deg, #88d3ce, #b3a5ff, #88d3ce);
-        background-size: 200% 100%;
-        animation: gradientMove 8s linear infinite;
-    }
-
-    @keyframes gradientMove {
-        0% { background-position: 100% 0; }
-        100% { background-position: -100% 0; }
-    }
-
-    .teacher-resource-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 20px 40px rgba(179, 165, 255, 0.2),
-                    0 4px 12px rgba(179, 165, 255, 0.15);
-    }
-
-    .teacher-header {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 25px;
-    }
-
-    .teacher-photo {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        overflow: hidden;
-        border: 3px solid transparent;
-        background: linear-gradient(white, white) padding-box,
-                    linear-gradient(45deg, #88d3ce, #b3a5ff) border-box;
-        position: relative;
-    }
-
-    .teacher-photo img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-
-    .teacher-resource-card:hover .teacher-photo img {
-        transform: scale(1.1);
-    }
-
-    .teacher-basic-info h3 {
-        color: #2d2d2d;
-        font-size: 1.4em;
-        font-weight: 600;
-        margin-bottom: 8px;
-        background: linear-gradient(45deg, #88d3ce, #b3a5ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .location {
-        color: #666;
-        font-size: 0.95em;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
     .teacher-details-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2010,6 +2001,495 @@ $_SESSION['back_view'] = 'studentdashboard.php';
     .connect-btn.already-requested:hover {
         transform: none;
         box-shadow: none;
+    }
+
+    /* Add these new styles */
+    .section-title {
+        margin: 30px 0 20px;
+        color: #2d2d2d;
+        font-size: 1.5em;
+        font-weight: 600;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0dbff;
+        grid-column: 1 / -1;
+    }
+
+    .card-type-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        font-weight: 500;
+    }
+
+    .response-card .card-type-badge {
+        background: linear-gradient(135deg, #88d3ce, #6bc7c0);
+        color: white;
+    }
+
+    .direct-request-card .card-type-badge {
+        background: linear-gradient(135deg, #b3a5ff, #9f8fff);
+        color: white;
+    }
+
+    .tutor-details .detail-item:last-child {
+        color: #666;
+        font-style: italic;
+    }
+
+    .tutor-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(224, 219, 255, 0.5);
+    }
+
+    .message-btn,
+    .profile-btn {
+        flex: 1;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 30px;
+        font-size: 0.95em;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .message-btn {
+        background: linear-gradient(135deg, #88d3ce, #6bc7c0);
+        color: white;
+        box-shadow: 0 4px 15px rgba(136, 211, 206, 0.3);
+    }
+
+    .profile-btn {
+        background: linear-gradient(135deg, #b3a5ff, #9f8fff);
+        color: white;
+        box-shadow: 0 4px 15px rgba(179, 165, 255, 0.3);
+    }
+
+    .message-btn::before,
+    .profile-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+        );
+        transition: 0.5s;
+    }
+
+    .message-btn:hover::before,
+    .profile-btn:hover::before {
+        left: 100%;
+    }
+
+    .message-btn:hover,
+    .profile-btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    .message-btn:hover {
+        box-shadow: 0 8px 20px rgba(136, 211, 206, 0.4);
+    }
+
+    .profile-btn:hover {
+        box-shadow: 0 8px 20px rgba(179, 165, 255, 0.4);
+    }
+
+    .message-btn:active,
+    .profile-btn:active {
+        transform: translateY(1px);
+    }
+
+    .message-btn i,
+    .profile-btn i {
+        font-size: 1.1em;
+        transition: transform 0.3s ease;
+    }
+
+    .message-btn:hover i,
+    .profile-btn:hover i {
+        transform: scale(1.1);
+    }
+
+    /* Add glass morphism effect */
+    .message-btn,
+    .profile-btn {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* Responsive adjustments */
+    @media screen and (max-width: 480px) {
+        .tutor-actions {
+            flex-direction: column;
+        }
+
+        .message-btn,
+        .profile-btn {
+            width: 100%;
+        }
+    }
+
+    /* Updated and new styles for the tutor cards */
+    .tutor-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        padding: 25px;
+        margin: 20px 0;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .tutor-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4facfe, #00f2fe);
+        opacity: 0.8;
+    }
+
+    .tutor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
+    }
+
+    .tutor-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 25px 0;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(79, 172, 254, 0.1);
+    }
+
+    .detail-item:hover {
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .detail-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        border-radius: 10px;
+        color: white;
+        font-size: 1.2em;
+    }
+
+    .detail-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-label {
+        font-size: 0.85em;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .detail-value {
+        font-size: 1.1em;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .card-type-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.9em;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.2);
+    }
+
+    /* Responsive adjustments */
+    @media screen and (max-width: 768px) {
+        .tutor-details-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .detail-item {
+            padding: 10px;
+        }
+    }
+
+    @media screen and (max-width: 480px) {
+        .tutor-card {
+            padding: 20px 15px;
+        }
+        
+        .detail-icon {
+            width: 35px;
+            height: 35px;
+            font-size: 1em;
+        }
+    }
+
+    /* Modern Card Design */
+    .teacher-resource-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        padding: 30px;
+        margin: 20px 0;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .teacher-resource-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        opacity: 0.8;
+    }
+
+    .teacher-resource-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15);
+    }
+
+    /* Header Section */
+    .teacher-header {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    .teacher-photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 3px solid rgba(99, 102, 241, 0.2);
+        position: relative;
+    }
+
+    .teacher-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .teacher-photo::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(45deg, rgba(99, 102, 241, 0.2), transparent);
+    }
+
+    .teacher-basic-info h3 {
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-bottom: 8px;
+        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Details Grid */
+    .teacher-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 25px 0;
+        padding: 25px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 20px;
+        border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .detail-item:hover {
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .detail-icon {
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border-radius: 12px;
+        color: white;
+        font-size: 1.2em;
+    }
+
+    /* About Section */
+    .teacher-about {
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 20px;
+        padding: 25px;
+        margin: 25px 0;
+        border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .teacher-about h4 {
+        color: #6366f1;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .teacher-about p {
+        color: #4b5563;
+        line-height: 1.8;
+        font-size: 1em;
+    }
+
+    /* Action Buttons */
+    .connect-btn {
+        width: 100%;
+        padding: 16px;
+        border: none;
+        border-radius: 16px;
+        font-size: 1.1em;
+        font-weight: 500;
+        cursor: pointer;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .connect-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .connect-btn:hover::before {
+        left: 100%;
+    }
+
+    .connect-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .connect-btn.already-requested {
+        background: linear-gradient(135deg, #9ca3af, #6b7280);
+        cursor: not-allowed;
+    }
+
+    /* Responsive Design */
+    @media screen and (max-width: 768px) {
+        .teacher-resource-card {
+            padding: 20px;
+        }
+
+        .teacher-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .teacher-photo {
+            margin: 0 auto;
+        }
+
+        .teacher-details-grid {
+            grid-template-columns: 1fr;
+            padding: 15px;
+        }
+    }
+
+    /* Loading Animation */
+    @keyframes shimmer {
+        0% {
+            background-position: -1000px 0;
+        }
+        100% {
+            background-position: 1000px 0;
+        }
+    }
+
+    .loading {
+        animation: shimmer 2s infinite linear;
+        background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+        background-size: 1000px 100%;
     }
     </style>
 </body>

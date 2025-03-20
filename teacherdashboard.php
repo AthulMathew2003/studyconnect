@@ -1125,6 +1125,9 @@ $tutor_query->close();
           <a href="#" class="nav-link" onclick="showContent('my-students')">
             <i class="fas fa-users"></i> My Students
           </a>
+          <a href="#" class="nav-link" onclick="showContent('tutoring-requests')">
+            <i class="fas fa-bell"></i> Tutoring Requests
+          </a>
           <a href="#" class="nav-link" onclick="showContent('settings')">
             <i class="fas fa-cog"></i> Settings
           </a>
@@ -1395,7 +1398,7 @@ $tutor_query->close();
             </div>
             <div class="students-grid">
               <?php
-              // Prepare query to get approved responses for the logged-in tutor
+              // First query remains the same for responses
               $stmt = $conn->prepare("
                   SELECT r.*, req.*, s.*, u.username, u.email, sl.*
                   FROM tbl_response r
@@ -1409,39 +1412,35 @@ $tutor_query->close();
               $stmt->bind_param("i", $tutor_id);
               $stmt->execute();
               $result = $stmt->get_result();
-
-              if ($result->num_rows > 0) {
+              
+              // Second query for tutor requests
+              $tutor_requests = $conn->prepare("
+                  SELECT tr.*, s.*, u.username, u.email, sl.*, t.teaching_mode,
+                         GROUP_CONCAT(subj.subject) as subjects
+                  FROM tbl_tutorrequest tr
+                  JOIN tbl_student s ON tr.student_id = s.student_id
+                  JOIN users u ON s.userid = u.userid
+                  JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
+                  JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
+                  LEFT JOIN tbl_tutorsubject ts ON t.tutor_id = ts.tutor_id
+                  LEFT JOIN tbl_subject subj ON ts.subject_id = subj.subject_id
+                  WHERE tr.tutor_id = ? AND tr.status = 'approved'
+                  GROUP BY tr.tutorrequestid
+              ");
+              
+              $tutor_requests->bind_param("i", $tutor_id);
+              $tutor_requests->execute();
+              $requests_result = $tutor_requests->get_result();
+              
+              if ($result->num_rows > 0 || $requests_result->num_rows > 0) {
+                  // Display students from responses
                   while ($row = $result->fetch_assoc()) {
-                      ?>
-                      <div class="student-card">
-                        <div class="student-header">
-                          <img src="<?php echo !empty($row['profilephoto']) ? htmlspecialchars($row['profilephoto']) : '1.webp'; ?>" 
-                               alt="Student" class="student-avatar">
-                          <div class="student-info">
-                            <h3><?php echo htmlspecialchars($row['username']); ?></h3>
-                            <div class="student-location">📍 <?php echo htmlspecialchars($row['city'] . ', ' . $row['country']); ?></div>
-                          </div>
-                        </div>
-                        <div class="student-details">
-                          <div class="detail-item">
-                            <span class="detail-label">Subject</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($row['subject']); ?></span>
-                          </div>
-                          <div class="detail-item">
-                            <span class="detail-label">Mode</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($row['mode_of_learning']); ?></span>
-                          </div>
-                          <div class="detail-item">
-                            <span class="detail-label">Fee Rate</span>
-                            <span class="detail-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
-                          </div>
-                        </div>
-                        <div class="student-actions">
-                          <button class="action-btn message-btn" onclick="startChat('<?php echo htmlspecialchars($row['username']); ?>')">Message</button>
-                          <button class="action-btn profile-btn" onclick="window.location.href='display_studentprofile.php?student_id=<?php echo $row['student_id']; ?>'">View Profile</button>
-                        </div>
-                      </div>
-                      <?php
+                      displayStudentCard($row, 'response');
+                  }
+                  
+                  // Display students from tutor requests
+                  while ($row = $requests_result->fetch_assoc()) {
+                      displayStudentCard($row, 'request');
                   }
               } else {
                   ?>
@@ -1454,7 +1453,62 @@ $tutor_query->close();
                   </div>
                   <?php
               }
+              
               $stmt->close();
+              $tutor_requests->close();
+              
+              // Helper function to display student card
+              function displayStudentCard($row, $type) {
+                  ?>
+                  <div class="student-card">
+                    <div class="student-header">
+                      <img src="<?php echo !empty($row['profilephoto']) ? htmlspecialchars($row['profilephoto']) : '1.webp'; ?>" 
+                           alt="Student" class="student-avatar">
+                      <div class="student-info">
+                        <h3><?php echo htmlspecialchars($row['username']); ?></h3>
+                        <div class="student-location">📍 <?php echo htmlspecialchars($row['city'] . ', ' . $row['country']); ?></div>
+                      </div>
+                    </div>
+                    <div class="student-details">
+                      <div class="detail-item">
+                        <span class="detail-label">Type</span>
+                        <span class="detail-value"><?php echo $type === 'response' ? 'Student Request' : 'Direct Request'; ?></span>
+                      </div>
+                      <?php if ($type === 'response'): ?>
+                      <div class="detail-item">
+                        <span class="detail-label">Subject</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['subject']); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Mode</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['mode_of_learning']); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Fee Rate</span>
+                        <span class="detail-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
+                      </div>
+                      <?php else: ?>
+                      <div class="detail-item">
+                        <span class="detail-label">Subjects</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['subjects'] ?? 'Not specified'); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Mode</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['teaching_mode']); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Fee Rate</span>
+                        <span class="detail-value">$<?php echo htmlspecialchars($row['feerate']); ?>/hour</span>
+                      </div>
+                      <?php endif; ?>
+                    </div>
+                    <div class="student-actions">
+                      <button class="action-btn message-btn" onclick="startChat('<?php echo htmlspecialchars($row['username']); ?>')">Message</button>
+                      <button class="action-btn profile-btn" onclick="window.location.href='display_studentprofile.php?student_id=<?php echo $row['student_id']; ?>'">View Profile</button>
+                    </div>
+                  </div>
+                  <?php
+              }
               ?>
             </div>
           </div>
@@ -1491,6 +1545,99 @@ $tutor_query->close();
             </div>
             
             <button style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; cursor: pointer;">Save Changes</button>
+          </div>
+        </div>
+
+        <div id="tutoring-requests-content" class="content-section">
+          <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="margin-bottom: 2rem; color: var(--accent-color);">Tutoring Requests</h2>
+            
+            <div style="margin-bottom: 2rem;">
+              <h3 style="margin-bottom: 1rem;">Pending Requests</h3>
+              <div class="requests-list" style="display: grid; gap: 1rem;">
+                <?php
+                // Fetch pending requests (status = 'created')
+                $pending_query = "SELECT tr.*, s.student_id, u.username, u.email 
+                                 FROM tbl_tutorrequest tr
+                                 JOIN tbl_student s ON tr.student_id = s.student_id
+                                 JOIN users u ON s.userid = u.userid
+                                 WHERE tr.tutor_id = $tutor_id AND tr.status = 'created'
+                                 ORDER BY tr.created_at DESC";
+                
+                $pending_result = $conn->query($pending_query);
+                
+                if ($pending_result->num_rows > 0) {
+                  while ($row = $pending_result->fetch_assoc()) {
+                    ?>
+                    <div style="padding: 1rem; border: 1px solid var(--input-color); border-radius: 8px; background: #f8f9fa;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                          <h4 style="color: var(--text-color);"><?php echo htmlspecialchars($row['username']); ?></h4>
+                          <a href="display_studentprofile.php?student_id=<?php echo $row['student_id']; ?>" 
+                             style="font-size: 0.9rem; color: var(--accent-color); text-decoration: none; padding: 0.2rem 0.5rem; border: 1px solid var(--accent-color); border-radius: 4px;">
+                            View Profile
+                          </a>
+                        </div>
+                        <span style="color: #666; font-size: 0.9rem;"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></span>
+                      </div>
+                      <p style="color: #666; margin-bottom: 0.5rem;"><?php echo htmlspecialchars($row['description']); ?></p>
+                      <p style="color: #666; margin-bottom: 0.5rem;">Fee Rate: $<?php echo htmlspecialchars($row['feerate']); ?>/hour</p>
+                      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <button onclick="updateRequestStatus(<?php echo $row['tutorrequestid']; ?>, 'approved')" 
+                                style="background: var(--accent-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                          Accept
+                        </button>
+                        <button onclick="updateRequestStatus(<?php echo $row['tutorrequestid']; ?>, 'rejected')"
+                                style="background: var(--error-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                    <?php
+                  }
+                } else {
+                  echo "<p style='text-align: center; color: #666;'>No pending requests</p>";
+                }
+                ?>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+              <h3 style="margin-bottom: 1rem;">Request History</h3>
+              <div class="history-list" style="display: grid; gap: 1rem;">
+                <?php
+                // Fetch request history (status = 'approved' or 'rejected')
+                $history_query = "SELECT tr.*, s.student_id, u.username, u.email 
+                                 FROM tbl_tutorrequest tr
+                                 JOIN tbl_student s ON tr.student_id = s.student_id
+                                 JOIN users u ON s.userid = u.userid
+                                 WHERE tr.tutor_id = $tutor_id AND tr.status != 'created'
+                                 ORDER BY tr.created_at DESC";
+                
+                $history_result = $conn->query($history_query);
+                
+                if ($history_result->num_rows > 0) {
+                  while ($row = $history_result->fetch_assoc()) {
+                    $status_color = $row['status'] == 'approved' ? '#34c759' : '#ff3b30';
+                    ?>
+                    <div style="padding: 1rem; border: 1px solid var(--input-color); border-radius: 8px; background: white;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h4 style="color: var(--text-color);"><?php echo htmlspecialchars($row['username']); ?></h4>
+                        <span style="color: <?php echo $status_color; ?>; font-weight: 500;">
+                          <?php echo ucfirst($row['status']); ?>
+                        </span>
+                      </div>
+                      <p style="color: #666; margin-bottom: 0.5rem;"><?php echo htmlspecialchars($row['description']); ?></p>
+                      <span style="color: #666; font-size: 0.9rem;"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></span>
+                    </div>
+                    <?php
+                  }
+                } else {
+                  echo "<p style='text-align: center; color: #666;'>No request history</p>";
+                }
+                ?>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -1769,6 +1916,31 @@ $tutor_query->close();
         });
     });
     
+    // Add this function to your existing JavaScript
+    function updateRequestStatus(requestId, status) {
+      if (confirm('Are you sure you want to ' + status + ' this request?')) {
+        fetch('update_request_status.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'request_id=' + requestId + '&status=' + status
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Reload the page to show updated status
+            location.reload();
+          } else {
+            alert('Error updating request status');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error updating request status');
+        });
+      }
+    }
     </script>
   </body>
 </html>

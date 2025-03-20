@@ -99,10 +99,25 @@ $sql="CREATE TABLE IF NOT EXISTS tbl_request (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('open', 'closed') DEFAULT 'open',
     mode_of_learning ENUM('online', 'offline', 'both') NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
     FOREIGN KEY (student_id) REFERENCES tbl_student(student_id) ON DELETE CASCADE
 )";
-
 $conn->query($sql);
+
+// Create an event to automatically close expired requests
+$sql = "CREATE EVENT IF NOT EXISTS close_expired_requests
+        ON SCHEDULE EVERY 1 DAY
+        DO
+        UPDATE tbl_request 
+        SET status = 'closed'
+        WHERE end_date < CURDATE() AND status = 'open'";
+$conn->query($sql);
+
+// Enable event scheduler
+$sql = "SET GLOBAL event_scheduler = ON";
+$conn->query($sql);
+
 $sql="CREATE TABLE IF NOT EXISTS tbl_coinwallet (
     wallet_id INT AUTO_INCREMENT PRIMARY KEY,
     userid INT NOT NULL,
@@ -138,4 +153,17 @@ $sql = "CREATE TABLE IF NOT EXISTS tbl_tutorrequest (
     FOREIGN KEY (tutor_id) REFERENCES tbl_tutors(tutor_id) ON DELETE CASCADE
 )";
 $conn->query($sql);
+
+$sql = "CREATE TABLE IF NOT EXISTS tbl_messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    message_text TEXT NOT NULL,
+    sent_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (sender_id) REFERENCES users(userid) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(userid) ON DELETE CASCADE
+)";
+$conn->query($sql);
+
 ?>
