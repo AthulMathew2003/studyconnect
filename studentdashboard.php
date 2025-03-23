@@ -59,8 +59,8 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                     <span>Teaching Requests</span>
                 </a>
                 <a href="#" class="nav-item" data-view="calendar">
-                    <i class="fas fa-calendar"></i>
-                    <span>Calendar</span>
+                    <i class="fas fa-comment-alt"></i>
+                    <span>Messages</span>
                 </a>
                 <a href="#" class="nav-item" data-view="resources">
                     <i class="fas fa-folder"></i>
@@ -696,9 +696,207 @@ $_SESSION['back_view'] = 'studentdashboard.php';
             </div>
 
             <div class="dashboard-view" id="calendar" style="display: none;">
-                <h1>Coins</h1>
-                <div class="calendar-container">
-                    <!-- Add your calendar content here -->
+                <h1>Messages</h1>
+                <div class="messages-container">
+                    <div class="chat-layout">
+                        <!-- Chat List Sidebar -->
+                        <div class="chat-list">
+                            <div class="chat-list-header">
+                                <div class="user-profile">
+                                    <img src="1.webp" alt="Profile" class="profile-img">
+                                    <div class="user-info">
+                                        <h3><?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Student'; ?></h3>
+                                        <span class="status">Online</span>
+                                    </div>
+                                </div>
+                               
+                            </div>
+                            
+                            <!-- Search Bar -->
+                            <div class="chat-search">
+                                <div class="search-wrapper">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input type="text" class="search-input" placeholder="Search teachers..." id="contact-search">
+                                </div>
+                            </div>
+                            
+                            <!-- Chat contacts list -->
+                            <div class="chat-contacts">
+                                <?php
+                                // Check if student profile is complete
+                                if (!isset($_SESSION['userid'])) {
+                                    echo '<div class="no-contacts">Please log in to access chat features.</div>';
+                                } else {
+                                    // Get the student_id
+                                    $check_student = "SELECT student_id FROM tbl_student WHERE userid = " . $_SESSION['userid'];
+                                    $student_result = $conn->query($check_student);
+                                    
+                                    if ($student_result->num_rows == 0) {
+                                        echo '<div class="no-contacts">Please complete your profile setup to connect with tutors.</div>';
+                                    } else {
+                                        $student_row = $student_result->fetch_assoc();
+                                        $student_id = $student_row['student_id'];
+                                        
+                                        // SQL query to fetch approved tutors from responses
+                                        $query = "
+                                            SELECT DISTINCT t.tutor_id, u.userid, u.username, ts.subject_id, s.subject, 
+                                            (SELECT COUNT(*) FROM tbl_messages 
+                                            WHERE sender_id = u.userid 
+                                            AND receiver_id = " . $_SESSION['userid'] . " 
+                                            AND is_read = 0) as unread_count
+                                            FROM tbl_response r
+                                            JOIN tbl_tutors t ON r.tutor_id = t.tutor_id
+                                            JOIN users u ON t.userid = u.userid
+                                            JOIN tbl_request req ON r.request_id = req.request_id
+                                            LEFT JOIN tbl_tutorsubject ts ON t.tutor_id = ts.tutor_id
+                                            LEFT JOIN tbl_subject s ON ts.subject_id = s.subject_id
+                                            WHERE req.student_id = $student_id
+                                            AND r.status = 'approved'
+                                        ";
+                                        
+                                        // Query for tutors from approved tutor requests
+                                        $query2 = "
+                                            SELECT DISTINCT t.tutor_id, u.userid, u.username, ts.subject_id, s.subject,
+                                            (SELECT COUNT(*) FROM tbl_messages 
+                                            WHERE sender_id = u.userid 
+                                            AND receiver_id = " . $_SESSION['userid'] . " 
+                                            AND is_read = 0) as unread_count
+                                            FROM tbl_tutorrequest tr
+                                            JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
+                                            JOIN users u ON t.userid = u.userid
+                                            LEFT JOIN tbl_tutorsubject ts ON t.tutor_id = ts.tutor_id
+                                            LEFT JOIN tbl_subject s ON ts.subject_id = s.subject_id
+                                            WHERE tr.student_id = $student_id
+                                            AND tr.status = 'approved'
+                                        ";
+                                        
+                                        $result = $conn->query($query);
+                                        $result2 = $conn->query($query2);
+                                        
+                                        $tutors_displayed = array();
+                                        $has_tutors = false;
+                                        
+                                        // Display tutors from responses
+                                        while ($row = $result->fetch_assoc()) {
+                                            $has_tutors = true;
+                                            $tutor_id = $row['tutor_id'];
+                                            $userid = $row['userid'];
+                                            
+                                            // Check if we've already displayed this tutor
+                                            if (!in_array($tutor_id, $tutors_displayed)) {
+                                                $tutors_displayed[] = $tutor_id;
+                                                $color_index = $tutor_id % 5;
+                                                $first_letter = strtoupper(substr($row['username'], 0, 1));
+                                                $subject_text = $row['subject'] ? $row['subject'] : 'Tutor';
+                                                
+                                                // Output the tutor contact
+                                                echo '<div class="chat-contact' . ($row['unread_count'] > 0 ? ' has-new-message' : '') . '" 
+                                                     data-teacher-id="' . $tutor_id . '" 
+                                                     data-userid="' . $userid . '" 
+                                                     data-username="' . htmlspecialchars($row['username']) . '"
+                                                     data-subject="' . htmlspecialchars($subject_text) . '">';
+                                                
+                                                echo '<div class="contact-avatar color-' . $color_index . '">' . $first_letter . '</div>';
+                                                
+                                                echo '<div class="contact-info">
+                                                        <span class="contact-name">' . htmlspecialchars($row['username']) . '</span>
+                                                        <span class="contact-status">' . htmlspecialchars($subject_text) . '</span>
+                                                      </div>';
+                                                
+                                                if ($row['unread_count'] > 0) {
+                                                    echo '<span class="unread-badge">' . $row['unread_count'] . '</span>';
+                                                }
+                                                
+                                                echo '</div>';
+                                            }
+                                        }
+                                        
+                                        // Display tutors from tutor requests
+                                        while ($row = $result2->fetch_assoc()) {
+                                            $has_tutors = true;
+                                            $tutor_id = $row['tutor_id'];
+                                            $userid = $row['userid'];
+                                            
+                                            // Check if we've already displayed this tutor
+                                            if (!in_array($tutor_id, $tutors_displayed)) {
+                                                $tutors_displayed[] = $tutor_id;
+                                                $color_index = $tutor_id % 5;
+                                                $first_letter = strtoupper(substr($row['username'], 0, 1));
+                                                $subject_text = $row['subject'] ? $row['subject'] : 'Tutor';
+                                                
+                                                // Output the tutor contact
+                                                echo '<div class="chat-contact' . ($row['unread_count'] > 0 ? ' has-new-message' : '') . '" 
+                                                     data-teacher-id="' . $tutor_id . '" 
+                                                     data-userid="' . $userid . '" 
+                                                     data-username="' . htmlspecialchars($row['username']) . '"
+                                                     data-subject="' . htmlspecialchars($subject_text) . '">';
+                                                
+                                                echo '<div class="contact-avatar color-' . $color_index . '">' . $first_letter . '</div>';
+                                                
+                                                echo '<div class="contact-info">
+                                                        <span class="contact-name">' . htmlspecialchars($row['username']) . '</span>
+                                                        <span class="contact-status">' . htmlspecialchars($subject_text) . '</span>
+                                                      </div>';
+                                                
+                                                if ($row['unread_count'] > 0) {
+                                                    echo '<span class="unread-badge">' . $row['unread_count'] . '</span>';
+                                                }
+                                                
+                                                echo '</div>';
+                                            }
+                                        }
+                                        
+                                        // Display message if no tutors found
+                                        if (!$has_tutors) {
+                                            echo '<div class="no-contacts">
+                                                    <p>You don\'t have any connected tutors yet. Explore available tutors and request connections.</p>
+                                                </div>';
+                                        }
+                                    }
+                                }
+                                ?>
+                            </div>
+                        </div>
+
+                        <!-- Chat Main Area -->
+                        <div class="chat-main">
+                            <div class="chat-header" id="chat-header">
+                                <div class="chat-contact">
+                                    <div class="contact-avatar color-0" id="selected-contact-avatar">
+                                        <span id="selected-contact-initial">?</span>
+                                    </div>
+                                    <div class="contact-info">
+                                        <h3 id="selected-contact-name">Select a tutor</h3>
+                                        <span class="status" id="selected-contact-status">-</span>
+                                    </div>
+                                </div>
+                             
+                            </div>
+
+                            <div class="chat-messages" id="chat-messages">
+                                <div class="no-conversation">
+                                    <p>Select a tutor to start chatting</p>
+                                    </div>
+                                </div>
+
+                            <div class="chat-input" id="chat-input" style="display: none;">
+                                <div class="message-input">
+                                    <textarea id="message-text" placeholder="Type a message" rows="1"></textarea>
+                                    <input type="hidden" id="selected-teacher-userid" value="">
+                                </div>
+                                <button class="send-btn-main" id="send-message-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                    </svg>
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1186,9 +1384,39 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         }
 
         function startChat(tutorId) {
-            // Implement chat functionality
-            console.log('Starting chat with tutor:', tutorId);
-            // You can redirect to a chat page or open a chat modal
+            // Switch to the messages tab
+            const tabs = document.querySelectorAll('.dashboard-tab');
+            const views = document.querySelectorAll('.dashboard-view');
+            
+            // Hide all views first
+            views.forEach(view => view.style.display = 'none');
+            
+            // Remove active class from all tabs
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show calendar view (which contains messages)
+            document.getElementById('calendar').style.display = 'block';
+            
+            // Add active class to calendar tab
+            document.querySelector('[data-view="calendar"]').classList.add('active');
+            
+            // Get the userid of the tutor from the hidden data attribute
+            const chatContacts = document.querySelectorAll('.chat-contact');
+            let selectedContact = null;
+            
+            // Find the corresponding chat contact by tutor_id and trigger a click
+            chatContacts.forEach(contact => {
+                if (contact.getAttribute('data-teacher-id') == tutorId) {
+                    selectedContact = contact;
+                }
+            });
+            
+            // If found, simulate a click to start the chat
+            if (selectedContact) {
+                selectedContact.click();
+                // Scroll the contact into view if necessary
+                selectedContact.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         function viewProfile(tutorId) {
@@ -1251,6 +1479,217 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         // Add event listeners for filters
         document.getElementById('subjectFilter').addEventListener('change', filterTeachers);
         document.getElementById('teachingModeFilter').addEventListener('change', filterTeachers);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all chat contacts
+            const chatContacts = document.querySelectorAll('.chat-contact');
+            const messageInput = document.getElementById('message-text');
+            const sendButton = document.getElementById('send-message-btn');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input');
+            
+            // Handle chat contact selection
+            chatContacts.forEach(contact => {
+                contact.addEventListener('click', function() {
+                    // Remove active class from all contacts
+                    chatContacts.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked contact
+                    this.classList.add('active');
+                    
+                    // Update selected contact info in chat header
+                    const teacherName = this.getAttribute('data-username');
+                    const teacherId = this.getAttribute('data-teacher-id');
+                    const userId = this.getAttribute('data-userid');
+                    // Fix for the null error - get subject from data attribute
+                    const subject = this.getAttribute('data-subject') || 'Tutor';
+                    const initial = teacherName.charAt(0).toUpperCase();
+                    const colorIndex = (teacherId % 5);
+                    
+                    console.log('Starting chat with tutor: ' + teacherId);
+                    
+                    document.getElementById('selected-contact-name').textContent = teacherName;
+                    document.getElementById('selected-contact-status').textContent = subject;
+                    document.getElementById('selected-teacher-userid').value = userId;
+                    document.getElementById('selected-contact-initial').textContent = initial;
+                    document.getElementById('selected-contact-avatar').className = 'contact-avatar color-' + colorIndex;
+                    
+                    // Show chat input
+                    chatInput.style.display = 'flex';
+                    
+                    // Remove unread badge if present
+                    if (this.classList.contains('has-new-message')) {
+                        this.classList.remove('has-new-message');
+                        const badge = this.querySelector('.unread-badge');
+                        if (badge) badge.remove();
+                    }
+                    
+                    // Load messages for this tutor
+                    loadMessages(userId);
+                });
+            });
+            
+            // Function to load messages
+            function loadMessages(tutorUserId) {
+                // Clear existing messages
+                chatMessages.innerHTML = '<div class="loading-messages">Loading messages...</div>';
+                
+                // Fetch messages from server
+                fetch('get_messages.php?tutor_id=' + tutorUserId, {
+                    method: 'GET'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    chatMessages.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        chatMessages.innerHTML = '<div class="no-messages">No messages yet. Start the conversation!</div>';
+                        return;
+                    }
+                    
+                    // Group messages by date
+                    let currentDate = '';
+                    data.forEach(message => {
+                        // Format the message date
+                        const messageDate = new Date(message.sent_time);
+                        const formattedDate = formatDate(messageDate);
+                        
+                        // If date changed, add a date separator
+                        if (formattedDate !== currentDate) {
+                            currentDate = formattedDate;
+                            const dateSeparator = document.createElement('div');
+                            dateSeparator.className = 'message-date';
+                            dateSeparator.textContent = currentDate;
+                            chatMessages.appendChild(dateSeparator);
+                        }
+                        
+                        // Create message element
+                        const messageDiv = document.createElement('div');
+                        const isUserMessage = message.sender_id == <?php echo isset($_SESSION['userid']) ? $_SESSION['userid'] : '0'; ?>;
+                        messageDiv.className = isUserMessage ? 'message sent' : 'message received';
+                        
+                        // Format message time
+                        const messageTime = formatTime(messageDate);
+                        
+                        // Add message content
+                        messageDiv.innerHTML = `
+                            <div class="message-content">
+                                <p>${message.message_text}</p>
+                                <span class="message-time">${messageTime}</span>
+                            </div>
+                        `;
+                        
+                        chatMessages.appendChild(messageDiv);
+                    });
+                    
+                    // Scroll to bottom
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                })
+                .catch(error => {
+                    console.error('Error loading messages:', error);
+                    chatMessages.innerHTML = '<div class="error-message">Error loading messages. Please try again.</div>';
+                });
+            }
+            
+            // Helper function to format date
+            function formatDate(date) {
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                
+                if (date.toDateString() === today.toDateString()) {
+                    return 'Today';
+                } else if (date.toDateString() === yesterday.toDateString()) {
+                    return 'Yesterday';
+                } else {
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+            }
+            
+            // Helper function to format time
+            function formatTime(date) {
+                const hours = date.getHours() % 12 || 12;
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+                return `${hours}:${minutes} ${ampm}`;
+            }
+            
+            // Auto-resize textarea as user types
+            if (messageInput) {
+                messageInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    const newHeight = Math.min(this.scrollHeight, 120);
+                    this.style.height = newHeight + 'px';
+                });
+            }
+            
+            // Handle message sending
+            if (sendButton && messageInput) {
+                sendButton.addEventListener('click', sendMessage);
+                
+                // Also allow sending with Enter key (but Shift+Enter for new line)
+                messageInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+            }
+            
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                const teacherUserId = document.getElementById('selected-teacher-userid').value;
+                
+                if (!message || !teacherUserId) return;
+                
+                // Create form data
+                const formData = new FormData();
+                formData.append('message', message);
+                formData.append('receiver_id', teacherUserId);
+                
+                // Send message to server
+                fetch('send_message.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear input
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                
+                        // Reload messages
+                        loadMessages(teacherUserId);
+                    } else {
+                        alert('Failed to send message: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending message:', error);
+                    alert('Failed to send message. Please try again.');
+                });
+            }
+            
+            // Search functionality
+            const searchInput = document.getElementById('contact-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase().trim();
+                    
+                    chatContacts.forEach(contact => {
+                        const teacherName = contact.getAttribute('data-username').toLowerCase();
+                        const subject = contact.getAttribute('data-subject').toLowerCase();
+                        
+                        if (teacherName.includes(searchTerm) || subject.includes(searchTerm)) {
+                            contact.style.display = 'flex';
+                        } else {
+                            contact.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
     </script>
 
     <!-- Add this before closing body tag -->
@@ -2490,6 +2929,484 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         animation: shimmer 2s infinite linear;
         background: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
         background-size: 1000px 100%;
+    }
+
+    /* Chat Layout Styles */
+    .messages-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+    
+    .chat-layout {
+        display: flex;
+        height: 75vh;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-top: 20px;
+        background-color: #fff;
+    }
+
+    /* Chat List Styles */
+    .chat-list {
+        width: 30%;
+        border-right: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+    }
+
+    /* Chat List Header */
+    .chat-list-header {
+        padding: 15px;
+        border-bottom: 1px solid #eaeaea;
+        background-color: var(--accent-color, #8672ff);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+    }
+
+    .user-profile {
+        display: flex;
+        align-items: center;
+    }
+
+    .profile-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .user-info h3 {
+        font-size: 16px;
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .status {
+        font-size: 12px;
+        opacity: 0.9;
+    }
+
+    .chat-actions {
+        display: flex;
+    }
+
+    .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+
+    .chat-list-header .icon-btn {
+        color: white;
+    }
+
+    .chat-list-header .icon-btn:hover {
+        background-color: rgba(255,255,255,0.2);
+    }
+
+    .chat-main .icon-btn {
+        color: #666;
+    }
+
+    .chat-main .icon-btn:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* Search Bar */
+    .chat-search {
+        padding: 10px 15px;
+        background-color: #f6f6f6;
+    }
+
+    .search-wrapper {
+        background-color: white;
+        border-radius: 20px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #eee;
+        transition: all 0.3s;
+    }
+
+    .search-wrapper:focus-within {
+        box-shadow: 0 0 0 2px rgba(134, 114, 255, 0.2);
+        border-color: var(--accent-color, #8672ff);
+    }
+
+    .search-icon {
+        color: #999;
+    }
+
+    .search-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        background: transparent;
+    }
+
+    /* Chat Contacts */
+    .chat-contacts {
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .chat-contact {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .chat-contact:hover {
+        background-color: #f9f7ff;
+    }
+
+    .chat-contact.active {
+        background-color: #f3f0ff;
+        border-left: 3px solid var(--accent-color, #8672ff);
+    }
+
+    .contact-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 600;
+        color: white;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    /* Avatar colors */
+    .contact-avatar.color-0 { background-color: var(--accent-color, #8672ff); }
+    .contact-avatar.color-1 { background-color: #FF5722; }
+    .contact-avatar.color-2 { background-color: #4CAF50; }
+    .contact-avatar.color-3 { background-color: #9C27B0; }
+    .contact-avatar.color-4 { background-color: #FF9800; }
+
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0; /* Enables text truncation */
+    }
+
+    .contact-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .contact-status {
+        font-size: 12px;
+        color: #666;
+    }
+
+    /* Unread badge */
+    .unread-badge {
+        background-color: var(--accent-color, #8672ff);
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        position: absolute;
+        right: 15px;
+    }
+
+    /* Chat Main Area */
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f5f5f5;
+    }
+
+    /* Chat Header */
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background-color: white;
+        border-bottom: 1px solid #eee;
+    }
+
+    .chat-header .chat-contact {
+        border-bottom: none;
+        padding: 0;
+        cursor: default;
+    }
+
+    .chat-header .chat-contact:hover {
+        background-color: transparent;
+    }
+
+    .chat-header .contact-info h3 {
+        font-size: 16px;
+        margin: 0;
+        color: #333;
+    }
+
+    /* Chat Messages */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f0f0f0' fill-opacity='0.5' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Message Date */
+    .message-date {
+        text-align: center;
+        margin: 15px 0;
+        font-size: 0.8rem;
+        color: #888;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .message-date:before, .message-date:after {
+        content: "";
+        height: 1px;
+        background-color: #ddd;
+        flex: 1;
+        margin: 0 10px;
+    }
+
+    /* Message Styles */
+    .message {
+        max-width: 70%;
+        margin-bottom: 15px;
+        display: flex;
+        clear: both;
+    }
+
+    .message.sent {
+        align-self: flex-end;
+        justify-content: flex-end;
+    }
+
+    .message.received {
+        align-self: flex-start;
+    }
+
+    .message-content {
+        padding: 12px 16px;
+        border-radius: 18px;
+        position: relative;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+    }
+
+    .message.sent .message-content {
+        background-color: var(--accent-color, #8672ff);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.received .message-content {
+        background-color: white;
+        color: #333;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .message-content p {
+        margin: 0 0 8px 0;
+        line-height: 1.5;
+    }
+
+    .message-content p:last-child {
+        margin-bottom: 0;
+    }
+
+    .message-time {
+        font-size: 0.7rem;
+        display: block;
+        text-align: right;
+        margin-top: 5px;
+    }
+
+    .message.sent .message-time {
+        color: rgba(255,255,255,0.8);
+    }
+
+    .message.received .message-time {
+        color: #999;
+    }
+
+    /* Message Attachment */
+    .message-attachment {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: rgba(0,0,0,0.05);
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-top: 8px;
+        cursor: pointer;
+    }
+
+    .received .message-attachment {
+        background-color: #f0f0f0;
+    }
+
+    .sent .message-attachment {
+        background-color: rgba(255,255,255,0.2);
+    }
+
+    /* Chat Input */
+    .chat-input {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        background-color: white;
+        border-top: 1px solid #eee;
+    }
+
+    .message-input {
+        flex: 1;
+        position: relative;
+        margin-right: 15px;
+    }
+
+    .message-input textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: none;
+        border-radius: 20px;
+        background-color: #f0f0f0;
+        font-size: 14px;
+        resize: none;
+        overflow-y: auto;
+        max-height: 120px;
+        min-height: 24px;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.3s;
+    }
+
+    .message-input textarea:focus {
+        background-color: #e8e8e8;
+    }
+
+    /* Send Button */
+    .send-btn-main {
+        background-color: var(--accent-color, #8672ff);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .send-btn-main:hover {
+        background-color: #7561ff;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(134, 114, 255, 0.3);
+    }
+
+    .send-btn-main:active {
+        transform: translateY(0);
+    }
+
+    /* Custom scrollbar */
+    .chat-contacts::-webkit-scrollbar,
+    .chat-messages::-webkit-scrollbar,
+    .message-input textarea::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-contacts::-webkit-scrollbar-track,
+    .chat-messages::-webkit-scrollbar-track,
+    .message-input textarea::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-contacts::-webkit-scrollbar-thumb,
+    .chat-messages::-webkit-scrollbar-thumb,
+    .message-input textarea::-webkit-scrollbar-thumb {
+        background-color: #ddd;
+        border-radius: 3px;
+    }
+
+    .chat-contacts::-webkit-scrollbar-thumb:hover,
+    .chat-messages::-webkit-scrollbar-thumb:hover,
+    .message-input textarea::-webkit-scrollbar-thumb:hover {
+        background-color: #ccc;
+    }
+
+    /* Empty states */
+    .no-conversation, .no-messages, .error-message, .no-contacts {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        color: #888;
+        text-align: center;
+        padding: 20px;
+        gap: 15px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .chat-layout {
+            flex-direction: column;
+            height: auto;
+        }
+
+        .chat-list {
+            width: 100%;
+            height: 300px;
+        }
+
+        .chat-main {
+            height: calc(75vh - 300px);
+        }
     }
     </style>
 </body>

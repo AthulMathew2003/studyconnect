@@ -1106,6 +1106,405 @@ $tutor_query->close();
       .content-section.active {
         display: block;
       }
+
+      /* Chat Layout Styles */
+      .chat-layout {
+        display: flex;
+        height: 80vh;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      /* Chat List Styles */
+      .chat-list {
+        width: 30%;
+        border-right: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+      }
+
+      .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f5f5f5;
+      }
+
+      /* Chat Messages Section */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background-color: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Message Styles */
+      .message {
+        max-width: 70%;
+        margin-bottom: 12px;
+        display: flex;
+        clear: both;
+      }
+
+      .message.sent {
+        align-self: flex-end;
+        justify-content: flex-end;
+      }
+
+      .message.received {
+        align-self: flex-start;
+      }
+
+      .message-content {
+        padding: 10px 15px;
+        border-radius: 18px;
+        position: relative;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+      }
+
+      .message.sent .message-content {
+        background-color: #0084ff;
+        color: white;
+        border-top-right-radius: 5px;
+        margin-left: 10px;
+      }
+
+      .message.received .message-content {
+        background-color: white;
+        color: #333;
+        border-top-left-radius: 5px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        margin-right: 10px;
+      }
+
+      .message-time {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.7);
+        text-align: right;
+        display: block;
+        margin-top: 5px;
+      }
+
+      .message.received .message-time {
+        color: #999;
+      }
+
+      /* Date Separator */
+      .message-date {
+        text-align: center;
+        margin: 15px 0;
+        font-size: 0.8rem;
+        color: #888;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .message-date:before, .message-date:after {
+        content: "";
+        height: 1px;
+        background-color: #ddd;
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      /* Chat Input Area */
+      .chat-input {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: white;
+        border-top: 1px solid #eee;
+      }
+
+      .message-input {
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      .message-input textarea {
+        width: 100%;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 20px;
+        background-color: #f0f0f0;
+        font-size: 14px;
+        resize: none;
+        overflow-y: auto;
+        max-height: 150px;
+        min-height: 40px;
+        font-family: inherit;
+      }
+
+      .message-input textarea:focus {
+        outline: none;
+        background-color: #e8e8e8;
+      }
+
+      /* Send Button */
+      .send-btn-main {
+        background-color: #0084ff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 15px;
+        margin-left: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+
+      .send-btn-main i {
+        margin-right: 5px;
+      }
+
+      .send-btn-main:hover {
+        background-color: #0078e7;
+      }
+
+      .send-btn-main:active {
+        background-color: #0069cc;
+      }
+
+      /* Chat Contacts */
+      .chat-contacts {
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .chat-contact {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .chat-contact:hover {
+        background-color: #f5f5f5;
+      }
+
+      .chat-contact.active {
+        background-color: #e9f3ff;
+      }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .contact-name {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .contact-status {
+        font-size: 0.8rem;
+        color: #777;
+      }
+
+      /* Empty States */
+      .no-conversation, .no-messages, .error-message, .no-contacts {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        color: #888;
+        font-style: italic;
+        text-align: center;
+        padding: 20px;
+      }
+
+      /* Chat List Header */
+      .chat-list-header {
+        padding: 15px;
+        border-bottom: 1px solid #eaeaea;
+        background-color: #f9f9f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+      }
+
+      .profile-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+      }
+
+      .user-info h3 {
+        font-size: 16px;
+        margin: 0;
+        color: #333;
+      }
+
+      .status {
+        font-size: 12px;
+        color: #4CAF50;
+      }
+
+      /* Chat Search */
+      .chat-search {
+        padding: 10px 15px;
+        background-color: #fff;
+        border-bottom: 1px solid #eaeaea;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 8px 15px;
+        padding-left: 35px;
+        border: 1px solid #e2e2e2;
+        border-radius: 20px;
+        font-size: 13px;
+        background-color: #f5f5f5;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>');
+        background-repeat: no-repeat;
+        background-position: 10px center;
+        transition: all 0.2s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #bfbfbf;
+        background-color: #fff;
+      }
+
+      /* Chat Contacts */
+      .chat-contacts {
+        overflow-y: auto;
+        flex: 1;
+        background-color: #fff;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+      }
+
+      .chat-contact {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .chat-contact:hover {
+        background-color: #f8f9fa;
+      }
+
+      .chat-contact.active {
+        background-color: #e7f2ff;
+        border-left: 3px solid #0084ff;
+      }
+      
+      .chat-contact.active .contact-name {
+        color: #0084ff;
+      }
+
+      .contact-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background-color: #0084ff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      /* Random colors for avatars to differentiate contacts */
+      .chat-contact:nth-child(5n+1) .contact-avatar { background-color: #0084ff; }
+      .chat-contact:nth-child(5n+2) .contact-avatar { background-color: #FF5722; }
+      .chat-contact:nth-child(5n+3) .contact-avatar { background-color: #4CAF50; }
+      .chat-contact:nth-child(5n+4) .contact-avatar { background-color: #9C27B0; }
+      .chat-contact:nth-child(5n+5) .contact-avatar { background-color: #FF9800; }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0; /* Enables text truncation */
+      }
+
+      .contact-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+      }
+
+      .contact-status {
+        font-size: 12px;
+        color: #72777a;
+      }
+
+      /* New message indicator */
+      .chat-contact::after {
+        content: "";
+        display: none;
+        width: 8px;
+        height: 8px;
+        background-color: #0084ff;
+        border-radius: 50%;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .chat-contact.has-new-message::after {
+        display: block;
+      }
+
+      /* Empty state */
+      .no-contacts {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 30px 20px;
+        text-align: center;
+        color: #72777a;
+      }
+
+      .no-contacts i {
+        font-size: 40px;
+        color: #d1d1d1;
+        margin-bottom: 15px;
+      }
+
+      .no-contacts p {
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 200px;
+      }
     </style>
   </head>
   <body>
@@ -1366,24 +1765,141 @@ $tutor_query->close();
         </div>
         
         <div id="messages-content" class="content-section">
-          <div class="messages-container" style="padding: 2rem;">
-            <div class="section-header">
-              <h2>Messages</h2>
-            </div>
-            <div style="max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-              <div style="padding: 1rem; border-bottom: 1px solid var(--input-color);">
-                <input type="text" placeholder="Search messages..." style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
+          <div class="messages-container">
+            <div class="chat-layout">
+              <!-- Chat List Sidebar -->
+              <div class="chat-list">
+                <div class="chat-list-header">
+                  <div class="user-profile">
+                    <img src="1.webp" alt="Profile" class="profile-img">
+                    <div class="user-info">
+                      <h3><?php echo htmlspecialchars($_SESSION['username']); ?></h3>
+                      <span class="status">Online</span>
+                    </div>
+                  </div>
+                  <div class="chat-actions">
+                    <button class="icon-btn">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Chat contacts list -->
+                <div class="chat-contacts">
+                  <?php
+                  // Get approved students from responses
+                  $stmt = $conn->prepare("
+                    SELECT DISTINCT r.tutor_id, r.request_id, s.student_id, u.username
+                    FROM tbl_response r
+                    JOIN tbl_request req ON r.request_id = req.request_id
+                    JOIN tbl_student s ON req.student_id = s.student_id
+                    JOIN users u ON s.userid = u.userid
+                    WHERE r.tutor_id = ? AND r.status = 'approved'
+                  ");
+                  
+                  $stmt->bind_param("i", $tutor_id);
+                  $stmt->execute();
+                  $result = $stmt->get_result();
+                  
+                  // Also get students from approved tutor requests
+                  $tutor_requests = $conn->prepare("
+                    SELECT DISTINCT tr.tutor_id, tr.student_id, u.username, u.userid
+                    FROM tbl_tutorrequest tr
+                    JOIN tbl_student s ON tr.student_id = s.student_id
+                    JOIN users u ON s.userid = u.userid
+                    WHERE tr.tutor_id = ? AND tr.status = 'approved'
+                  ");
+                  
+                  $tutor_requests->bind_param("i", $tutor_id);
+                  $tutor_requests->execute();
+                  $requests_result = $tutor_requests->get_result();
+                  
+                  // Combine both results to display all students
+                  $displayed_students = [];
+                  
+                  // Display students from responses
+                  while ($row = $result->fetch_assoc()) {
+                    $student_id = $row['student_id'];
+                    if (!in_array($student_id, $displayed_students)) {
+                      $displayed_students[] = $student_id;
+                      ?>
+                      <div class="chat-contact" data-student-id="<?php echo $student_id; ?>">
+                        <div class="contact-info">
+                          <span class="contact-name"><?php echo htmlspecialchars($row['username']); ?></span>
+                          <span class="contact-status">Student</span>
+                        </div>
+                      </div>
+                      <?php
+                    }
+                  }
+                  
+                  // Display students from tutor requests
+                  while ($row = $requests_result->fetch_assoc()) {
+                    $student_id = $row['student_id'];
+                    if (!in_array($student_id, $displayed_students)) {
+                      $displayed_students[] = $student_id;
+                      ?>
+                      <div class="chat-contact" data-student-id="<?php echo $student_id; ?>">
+                        <div class="contact-info">
+                          <span class="contact-name"><?php echo htmlspecialchars($row['username']); ?></span>
+                          <span class="contact-status">Student</span>
+                        </div>
+                      </div>
+                      <?php
+                    }
+                  }
+                  
+                  if (empty($displayed_students)) {
+                    ?>
+                    <div class="no-contacts">
+                      <p>No students to chat with yet</p>
+                    </div>
+                    <?php
+                  }
+                  ?>
+                </div>
               </div>
-              <div class="message-list">
-                <div style="padding: 1rem; display: flex; gap: 1rem; border-bottom: 1px solid var(--input-color); cursor: pointer; transition: 0.3s;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='white'">
-                  <img src="1.webp" alt="Student" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                  <div style="flex: 1;">
-                    <h4 style="margin-bottom: 0.3rem;">Sarah Johnson</h4>
-                    <p style="color: #666; font-size: 0.9rem;">Hello, when can we start our next lesson?</p>
+
+              <!-- Chat Main Area -->
+              <div class="chat-main">
+                <div class="chat-header" id="chat-header">
+                  <div class="chat-contact">
+                    <img src="1.webp" alt="Contact" class="contact-img">
+                    <div class="contact-info">
+                      <h3 id="selected-contact-name">Select a student</h3>
+                      <span class="status" id="selected-contact-status">-</span>
+                    </div>
                   </div>
-                  <div style="text-align: right;">
-                    <span style="font-size: 0.8rem; color: #666;">2:30 PM</span>
+                  <div class="chat-actions">
+                    <button class="icon-btn">
+                      <i class="fas fa-search"></i>
+                    </button>
+                    <button class="icon-btn">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
                   </div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages">
+                  <div class="no-conversation">
+                    <p>Select a student to start chatting</p>
+                  </div>
+                </div>
+
+                <div class="chat-input" id="chat-input" style="display: none;">
+                  <button class="icon-btn">
+                    <i class="fas fa-smile"></i>
+                  </button>
+                  <button class="icon-btn">
+                    <i class="fas fa-paperclip"></i>
+                  </button>
+                  <div class="message-input">
+                    <textarea id="message-text" placeholder="Type a message" rows="1"></textarea>
+                    <input type="hidden" id="selected-student-userid" value="">
+                  </div>
+                  <button class="send-btn-main" id="send-message-btn">
+                    <i class="fas fa-paper-plane"></i> Send
+                  </button>
                 </div>
               </div>
             </div>
@@ -1941,6 +2457,187 @@ $tutor_query->close();
         });
       }
     }
+
+    // JavaScript to handle chat functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const chatContacts = document.querySelectorAll('.chat-contact');
+      const chatMessages = document.getElementById('chat-messages');
+      const chatHeader = document.getElementById('chat-header');
+      const chatInput = document.getElementById('chat-input');
+      const messageInput = document.getElementById('message-text');
+      const sendButton = document.getElementById('send-message-btn');
+      const selectedStudentInput = document.getElementById('selected-student-userid');
+      
+      // Function to fetch student details and their messages
+      async function loadStudentChat(studentId) {
+        try {
+          const response = await fetch('get_student_chat.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `student_id=${studentId}`
+          });
+          
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          
+          const data = await response.json();
+          
+          // Update chat header with student info
+          document.getElementById('selected-contact-name').textContent = data.student.username;
+          document.getElementById('selected-contact-status').textContent = 'Student';
+          
+          // Store student's userid for sending messages
+          selectedStudentInput.value = data.student.userid;
+          
+          // Display chat input
+          chatInput.style.display = 'flex';
+          
+          // Clear and populate chat messages
+          chatMessages.innerHTML = '';
+          
+          if (data.messages.length === 0) {
+            chatMessages.innerHTML = '<div class="no-messages"><p>No messages yet. Start the conversation!</p></div>';
+            return;
+          }
+          
+          // Group messages by date
+          let currentDate = '';
+          data.messages.forEach(message => {
+            // Format the date
+            const messageDate = new Date(message.sent_time);
+            const formattedDate = messageDate.toLocaleDateString();
+            
+            // Add date separator if it's a new date
+            if (formattedDate !== currentDate) {
+              currentDate = formattedDate;
+              const dateSeparator = document.createElement('div');
+              dateSeparator.className = 'message-date';
+              dateSeparator.textContent = currentDate;
+              chatMessages.appendChild(dateSeparator);
+            }
+            
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = message.sender_id == <?php echo $_SESSION['userid']; ?> ? 'message sent' : 'message received';
+            
+            const messageTime = new Date(message.sent_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+              <div class="message-content">
+                <p>${message.message_text}</p>
+                <span class="message-time">${messageTime}</span>
+              </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+          });
+          
+          // Scroll to bottom
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          
+        } catch (error) {
+          console.error('Error:', error);
+          chatMessages.innerHTML = '<div class="error-message"><p>Failed to load chat messages</p></div>';
+        }
+      }
+      
+      // Add click event to chat contacts
+      chatContacts.forEach(contact => {
+        contact.addEventListener('click', function() {
+          // Remove active class from all contacts
+          chatContacts.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked contact
+          this.classList.add('active');
+          
+          // Get student ID from data attribute
+          const studentId = this.getAttribute('data-student-id');
+          
+          // Load chat for this student
+          loadStudentChat(studentId);
+        });
+      });
+      
+      // Send message functionality - ONLY on button click, not Enter key
+      sendButton.addEventListener('click', sendMessage);
+      
+      async function sendMessage() {
+        const messageText = messageInput.value.trim();
+        const receiverUserId = selectedStudentInput.value;
+        
+        if (!messageText || !receiverUserId) {
+          return;
+        }
+        
+        try {
+          const response = await fetch('send_message.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `message=${messageText}&receiver_id=${receiverUserId}`
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to send message');
+          }
+          
+          // Clear input field
+          messageInput.value = '';
+          
+          // Refresh messages
+          const studentId = document.querySelector('.chat-contact.active').getAttribute('data-student-id');
+          loadStudentChat(studentId);
+          
+        } catch (error) {
+          console.error('Error sending message:', error);
+          alert('Failed to send message. Please try again.');
+        }
+      }
+    });
+
+    // Auto-resize textarea
+    const messageTextarea = document.getElementById('message-text');
+    
+    messageTextarea.addEventListener('input', function() {
+      // Reset height to default
+      this.style.height = 'auto';
+      
+      // Calculate the new height (capped at 150px for max 5-6 lines)
+      const newHeight = Math.min(this.scrollHeight, 150);
+      
+      // Set the new height
+      this.style.height = newHeight + 'px';
+    });
+
+    // Add this to your existing DOMContentLoaded event handler
+    document.addEventListener('DOMContentLoaded', function() {
+      // Existing code...
+      
+      // Search contacts functionality
+      const searchInput = document.getElementById('contact-search');
+      const chatContacts = document.querySelectorAll('.chat-contact');
+      
+      if (searchInput) {
+        searchInput.addEventListener('input', function() {
+          const searchTerm = this.value.toLowerCase().trim();
+          
+          chatContacts.forEach(contact => {
+            const username = contact.getAttribute('data-username').toLowerCase();
+            if (username.includes(searchTerm)) {
+              contact.style.display = 'flex';
+            } else {
+              contact.style.display = 'none';
+            }
+          });
+        });
+      }
+      
+      // Rest of your existing code...
+    });
     </script>
   </body>
 </html>
