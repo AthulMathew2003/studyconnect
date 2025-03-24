@@ -2194,8 +2194,8 @@ $tutor_query->close();
             link.classList.remove('active');
         });
         
-        // Add active class to clicked nav link
-        event.target.closest('.nav-link').classList.add('active');
+        // Add active class to the matching nav link
+        document.querySelector(`.nav-link[onclick*="showContent('${contentId}')"]`).classList.add('active');
         
         // Hide all content sections
         document.querySelectorAll('.content-section').forEach(section => {
@@ -2638,6 +2638,43 @@ $tutor_query->close();
       
       // Rest of your existing code...
     });
+
+    // Add this function to your JavaScript section
+    function startChat(username) {
+        // First switch to the messages tab
+        showContent('messages');
+        
+        // After a small delay to ensure the messages tab is loaded
+        setTimeout(() => {
+            // Find all chat contacts
+            const chatContacts = document.querySelectorAll('.chat-contact');
+            let contactFound = false;
+            
+            // Look for a contact with matching username
+            chatContacts.forEach(contact => {
+                const contactName = contact.querySelector('.contact-name');
+                if (contactName && contactName.textContent === username) {
+                    // Simulate a click on this contact
+                    contact.click();
+                    contactFound = true;
+                }
+            });
+            
+            // If no matching contact found, show a message
+            if (!contactFound) {
+                document.getElementById('chat-messages').innerHTML = `
+                    <div class="no-conversation">
+                        <p>Could not find a chat with ${username}.</p>
+                        <p>This might occur if your connection was just approved.</p>
+                        <p>Try refreshing the page to see all your current student connections.</p>
+                        <button onclick="location.reload()" style="margin-top: 15px; padding: 8px 16px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }, 100); // Small delay to ensure tab switch is complete
+    }
     </script>
   </body>
 </html>
