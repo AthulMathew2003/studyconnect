@@ -1749,11 +1749,15 @@ $tutor_query->close();
                   
                   // Also get students from approved tutor requests
                   $tutor_requests = $conn->prepare("
-                    SELECT DISTINCT tr.tutor_id, tr.student_id, u.username, u.userid
+                    SELECT tr.*, s.*, u.username, u.email, sl.*, t.teaching_mode,
+                           tr.description
                     FROM tbl_tutorrequest tr
                     JOIN tbl_student s ON tr.student_id = s.student_id
                     JOIN users u ON s.userid = u.userid
+                    JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
+                    JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
                     WHERE tr.tutor_id = ? AND tr.status = 'approved'
+                    GROUP BY tr.tutorrequestid
                   ");
                   
                   $tutor_requests->bind_param("i", $tutor_id);
@@ -1952,7 +1956,17 @@ $tutor_query->close();
                       <?php else: ?>
                       <div class="detail-item">
                         <span class="detail-label">Subjects</span>
-                        <span class="detail-value"><?php echo htmlspecialchars($row['subjects'] ?? 'Not specified'); ?></span>
+                        <span class="detail-value">
+                          <?php 
+                            if ($type === 'request') {
+                              // Extract subject from description - adjust the parsing logic based on your format
+                              $subject = extractSubjectFromDescription($row['description']);
+                              echo htmlspecialchars($subject);
+                            } else {
+                              echo htmlspecialchars($row['subject']);
+                            }
+                          ?>
+                        </span>
                       </div>
                       <div class="detail-item">
                         <span class="detail-label">Mode</span>
