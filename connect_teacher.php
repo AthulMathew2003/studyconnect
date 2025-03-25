@@ -4,7 +4,7 @@ require_once 'connectdb.php';
 
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['userid']) || !isset($_GET['tutor_id'])) {
+if (!isset($_SESSION['userid']) || !isset($_GET['tutor_id']) || !isset($_GET['subject'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
     exit();
 }
@@ -22,6 +22,7 @@ if (!$result || $result->num_rows === 0) {
 $student = $result->fetch_assoc();
 $student_id = (int)$student['student_id'];
 $tutor_id = (int)$_GET['tutor_id'];
+$subject = $conn->real_escape_string($_GET['subject']);
 
 // Check if a request already exists
 $check_query = "SELECT tutorrequestid FROM tbl_tutorrequest 
@@ -47,9 +48,12 @@ if (!$rate_result || $rate_result->num_rows === 0) {
 $tutor = $rate_result->fetch_assoc();
 $hourly_rate = $tutor['hourly_rate'];
 
+// Create description with subject
+$description = "Tutoring request for: " . $subject;
+
 // Insert the connection request
 $insert_query = "INSERT INTO tbl_tutorrequest (student_id, tutor_id, description, feerate, status, created_at) 
-                 VALUES ($student_id, $tutor_id, 'New connection request', $hourly_rate, 'created', CURRENT_TIMESTAMP)";
+                 VALUES ($student_id, $tutor_id, '$description', $hourly_rate, 'created', CURRENT_TIMESTAMP)";
 
 if ($conn->query($insert_query)) {
     echo json_encode(['success' => true, 'message' => 'Connection request sent successfully']);

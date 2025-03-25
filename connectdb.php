@@ -165,5 +165,18 @@ $sql = "CREATE TABLE IF NOT EXISTS tbl_messages (
     FOREIGN KEY (receiver_id) REFERENCES users(userid) ON DELETE CASCADE
 )";
 $conn->query($sql);
-
+$sql = "CREATE TABLE IF NOT EXISTS tbl_review (
+    review_id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id INT NOT NULL,
+    tutor_id INT NOT NULL,
+    subject_id INT,
+    rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES tbl_student(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (tutor_id) REFERENCES tbl_tutors(tutor_id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES tbl_subject(subject_id) ON DELETE SET NULL
+)";
+$conn->query($sql);
 ?>

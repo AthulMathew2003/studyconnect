@@ -1093,6 +1093,24 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         </div>
     </div>
 
+    <!-- Modal for connecting with teacher -->
+    <div id="connectModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Connect with Tutor</h2>
+            <form id="connectForm">
+                <input type="hidden" id="tutorId" name="tutorId">
+                <div class="form-group">
+                    <label for="subject">Select Subject:</label>
+                    <select id="subjectSelect" name="subject" class="connect-input" required>
+                        <option value="">Select a subject</option>
+                    </select>
+                </div>
+                <button type="submit" class="connect-submit-btn">Send Request</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Initialize active view
         let currentView = 'overview';
@@ -1426,21 +1444,92 @@ $_SESSION['back_view'] = 'studentdashboard.php';
             window.location.href = 'tutor_profile.php?id=' + tutorId;
         }
 
+        // Function to show the connect modal and load subjects
         function connectWithTeacher(tutorId) {
-            fetch(`connect_teacher.php?tutor_id=${tutorId}`)
+            // Set the tutor ID in the hidden field
+            document.getElementById('tutorId').value = tutorId;
+            
+            // Clear previous subjects
+            const subjectSelect = document.getElementById('subjectSelect');
+            while (subjectSelect.options.length > 1) {
+                subjectSelect.remove(1);
+            }
+            
+            // Fetch subjects taught by this tutor
+            fetch(`get_tutor_subjects.php?tutor_id=${tutorId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showSuccessMessage(data.message);
+                        data.subjects.forEach(subject => {
+                            const option = document.createElement('option');
+                            option.value = subject.subject;
+                            option.textContent = subject.subject;
+                            subjectSelect.appendChild(option);
+                        });
                     } else {
-                        alert(data.message);
+                        alert('Could not load subjects: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred while connecting with the teacher');
+                    alert('An error occurred while loading subjects');
                 });
+            
+            // Show the modal
+            document.getElementById('connectModal').style.display = 'block';
         }
+        
+        // Close the modal when clicking the X
+        document.querySelector('.close').addEventListener('click', function() {
+            document.getElementById('connectModal').style.display = 'none';
+        });
+        
+        // Close the modal when clicking outside of it
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('connectModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Handle form submission
+        document.getElementById('connectForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const tutorId = document.getElementById('tutorId').value;
+            const subject = document.getElementById('subjectSelect').value;
+            
+            if (!subject) {
+                alert('Please select a subject');
+                return;
+            }
+            
+            // Send connection request
+            fetch(`connect_teacher.php?tutor_id=${tutorId}&subject=${encodeURIComponent(subject)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Connection request sent successfully!');
+                        document.getElementById('connectModal').style.display = 'none';
+                        
+                        // Update the connect button to show "Sent" 
+                        const connectButton = document.querySelector(`button.connect-btn[onclick="connectWithTeacher(${tutorId})"]`);
+                        if (connectButton) {
+                            // Replace the button with a "Sent" button
+                            connectButton.innerHTML = '<i class="fas fa-check"></i> Request Sent';
+                            connectButton.classList.add('already-requested');
+                            connectButton.disabled = true;
+                            connectButton.removeAttribute('onclick');
+                        }
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while sending the request');
+                });
+        });
 
         // Add filter functionality
         function filterTeachers() {
@@ -3407,6 +3496,143 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         .chat-main {
             height: calc(75vh - 300px);
         }
+    }
+
+    /* Modal styles */
+    .connect-modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .connect-modal-content {
+        background-color: white;
+        padding: 25px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 500px;
+        position: relative;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .connect-modal-close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    #connect-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    #subject-input {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .connect-submit-btn {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .connect-submit-btn:hover {
+        background-color: #45a049;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(5px);
+    }
+    
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes modalFadeIn {
+        from {opacity: 0; transform: translateY(-20px);}
+        to {opacity: 1; transform: translateY(0);}
+    }
+    
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    
+    .close:hover,
+    .close:focus {
+        color: #000;
+        text-decoration: none;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+    
+    /* Keep your existing CSS classes */
+    .connect-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .connect-submit-btn {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .connect-submit-btn:hover {
+        background-color: #45a049;
     }
     </style>
 </body>

@@ -1614,61 +1614,7 @@ $tutor_query->close();
               <h2>Find a Student</h2>
             </div>
             
-            <div class="filters-container">
-              <div class="filter-group">
-                <span class="filter-label">Location</span>
-                <select class="filter-select">
-                  <option>All Locations</option>
-                  <?php
-                    // Prepare and execute query to get unique locations with city, state, and country
-                    $stmt = $conn->prepare("SELECT DISTINCT city, state, country FROM tbl_studentlocation ORDER BY city, state, country");
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    // Loop through results and create option elements with combined location info
-                    while ($row = $result->fetch_assoc()) {
-                      $location = htmlspecialchars($row['city'] . ', ' . $row['state'] . ', ' . $row['country']);
-                      echo "<option>" . $location . "</option>";
-                    }
-                    $stmt->close();
-                  ?>
-                </select>
-              </div>
-              
-              <div class="filter-group">
-                <span class="filter-label">Subject</span>
-                <select class="filter-select">
-                  <option>All Subjects</option>
-                  <?php
-                    // Prepare and execute query to get subjects
-                    $stmt = $conn->prepare("SELECT subject FROM tbl_subject");
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    // Loop through results and create option elements
-                    while ($row = $result->fetch_assoc()) {
-                      echo "<option>" . htmlspecialchars($row['subject']) . "</option>";
-                    }
-                    $stmt->close();
-                  ?>
-                </select>
-              </div>
-              
-              <div class="filter-group">
-                <span class="filter-label">Mode</span>
-                <select class="filter-select">
-                  <option>All Modes</option>
-                  <option>Online</option>
-                  <option>Offline</option>
-                  <option>Both</option>
-                </select>
-              </div>
-              <div class="filter-group">
-                <button id="search-button" class="search-button" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 20px; cursor: pointer; transition: background 0.3s;">
-                  Search
-                </button>
-              </div>
-            </div>
+            
 
             <div class="requests-grid">
   <?php
@@ -2301,36 +2247,6 @@ $tutor_query->close();
       // Call the function to fetch requests when the page loads
       document.addEventListener('DOMContentLoaded', fetchStudentRequests);
 
-      // Add event listener to search button
-      document.getElementById('search-button').addEventListener('click', function() {
-        const location = document.querySelector('.filter-select:nth-of-type(1)').value;
-        const subject = document.querySelector('.filter-select:nth-of-type(2)').value;
-        const mode = document.querySelector('.filter-select:nth-of-type(3)').value;
-        
-        fetch('fetch_requests.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ location, subject, mode })
-        })
-        .then(response => response.json())
-        .then(data => {
-          const requestsGrid = document.querySelector('.requests-grid');
-          requestsGrid.innerHTML = '';
-          if (data.length > 0) {
-            data.forEach(request => {
-              const requestElement = document.createElement('div');
-              requestElement.classList.add('request-item');
-              requestElement.innerHTML = `<p>${request.title}</p><p>${request.description}</p>`;
-              requestsGrid.appendChild(requestElement);
-            });
-          } else {
-            requestsGrid.innerHTML = '<p>No student requests found.</p>';
-          }
-        })
-        .catch(error => console.error('Error fetching requests:', error));
-      });
 
       // Get the popup element
       const popup = document.querySelector('.confirmation-popup');
