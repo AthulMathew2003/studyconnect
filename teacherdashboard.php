@@ -1956,17 +1956,7 @@ $tutor_query->close();
                       <?php else: ?>
                       <div class="detail-item">
                         <span class="detail-label">Subjects</span>
-                        <span class="detail-value">
-                          <?php 
-                            if ($type === 'request') {
-                              // Extract subject from description - adjust the parsing logic based on your format
-                              $subject = extractSubjectFromDescription($row['description']);
-                              echo htmlspecialchars($subject);
-                            } else {
-                              echo htmlspecialchars($row['subject']);
-                            }
-                          ?>
-                        </span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['description'] ?? 'Not specified'); ?></span>
                       </div>
                       <div class="detail-item">
                         <span class="detail-label">Mode</span>
