@@ -1734,6 +1734,12 @@ $tutor_query->close();
         <p class="response-count" style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
             <span id="applicant-count">0</span> tutors have applied for this request
         </p>
+        <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
+            Your coin balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?></span> coins
+        </p>
+        <p style="color: #ff6b6b; font-size: 0.9rem;">
+            Connecting with a student costs 50 coins
+        </p>
         <!-- Add textarea for custom message -->
         <div style="margin-top: 1rem;">
             <label for="connect-message" style="display: block; margin-bottom: 0.5rem;">Message to student:</label>
@@ -1748,6 +1754,23 @@ $tutor_query->close();
             <button class="confirm-connect">Yes</button>
             <button class="cancel-connect">No</button>
         </div>
+    </div>
+</div>
+
+<!-- Update the insufficient coins modal to handle both cases -->
+<div class="insufficient-coins-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="popup-content" style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; text-align: center;">
+        <h3 style="color: #ff6b6b; margin-bottom: 1rem;">Connection Failed</h3>
+        <div id="insufficient-coins-message">
+            <p>You need at least 50 coins to connect with a student.</p>
+            <p style="margin: 1rem 0;">Your current balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?></span> coins</p>
+            <button onclick="window.location.href='buy_coins.php'" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer; margin-bottom: 1rem;">
+                Buy Coins
+            </button>
+        </div>
+        <button onclick="closeInsufficientCoinsModal()" style="background: #f3f0ff; color: var(--text-color); border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer;">
+            Close
+        </button>
     </div>
 </div>
 
@@ -2315,6 +2338,7 @@ $tutor_query->close();
       document.querySelector('.confirm-connect').addEventListener('click', () => {
         const requestId = popup.dataset.requestId;
         const message = document.getElementById('connect-message').value.trim();
+        const currentBalance = <?php echo $coin_balance ?? 0; ?>; // Get current balance
         
         // Validate message
         if (!message) {
@@ -2328,25 +2352,59 @@ $tutor_query->close();
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: `request_id=${requestId}&tutor_id=<?php echo $tutor_id; ?>&message=${encodeURIComponent(message)}`
+            body: `request_id=${requestId}&tutor_id=<?php echo $tutor_id; ?>&message=${encodeURIComponent(message)}&deduct_coins=50`
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 alert('Your response has been sent to the student!');
-                // Optionally update the UI to show the request has been responded to
+                // Update displayed coin balance
+                const coinAmountElements = document.querySelectorAll('.coin-amount');
+                coinAmountElements.forEach(element => {
+                    element.textContent = (currentBalance - 50);
+                });
+                // Update the UI to show the request has been responded to
                 const connectBtn = document.querySelector(`[data-request-id="${requestId}"]`);
                 if (connectBtn) {
                     connectBtn.disabled = true;
                     connectBtn.textContent = 'Response Sent';
                 }
             } else {
-                alert('Failed to connect: ' + data.message);
+                // Show error in modal
+                const modal = document.querySelector('.insufficient-coins-modal');
+                const messageDiv = document.getElementById('insufficient-coins-message');
+                
+                if (data.message === 'Insufficient coins') {
+                    messageDiv.innerHTML = `
+                        <p>You need at least 50 coins to connect with a student.</p>
+                        <p style="margin: 1rem 0;">Your current balance: <span class="coin-amount">${currentBalance}</span> coins</p>
+                        <button onclick="window.location.href='buy_coins.php'" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer; margin-bottom: 1rem;">
+                            Buy Coins
+                        </button>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <p>Failed to connect: ${data.message}</p>
+                        <p style="margin: 1rem 0;">Please try again later or contact support if the problem persists.</p>
+                    `;
+                }
+                
+                modal.style.display = 'flex';
             }
         })
-        .catch(error => console.error('Error connecting with student:', error));
+        .catch(error => {
+            console.error('Error connecting with student:', error);
+            // Show error in modal
+            const modal = document.querySelector('.insufficient-coins-modal');
+            const messageDiv = document.getElementById('insufficient-coins-message');
+            messageDiv.innerHTML = `
+                <p>An error occurred while trying to connect.</p>
+                <p style="margin: 1rem 0;">Please try again later or contact support if the problem persists.</p>
+            `;
+            modal.style.display = 'flex';
+        });
         
-        // Reset the message field to default value
+        // Reset the message field to default value and close the confirmation popup
         document.getElementById('connect-message').value = 'I am interested in helping you with your studies.';
         popup.style.display = 'none';
       });
@@ -2714,6 +2772,11 @@ $tutor_query->close();
         // Initial load with default filters
         applyFilters();
     });
+
+    // Add function to close insufficient coins modal
+    function closeInsufficientCoinsModal() {
+        document.querySelector('.insufficient-coins-modal').style.display = 'none';
+    }
     </script>
   </body>
 </html>

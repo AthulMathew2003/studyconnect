@@ -8,6 +8,36 @@ if (!isset($_SESSION['userid'])) {
     exit();
 }
 
+// Add this at the beginning of your connect_student.php file
+if (isset($_POST['deduct_coins'])) {
+    $coins_to_deduct = 50;
+    
+    // Check current balance
+    $check_balance = $conn->prepare("SELECT coin_balance FROM tbl_coinwallet WHERE userid = ?");
+    $check_balance->bind_param("i", $_SESSION['userid']);
+    $check_balance->execute();
+    $result = $check_balance->get_result();
+    
+    if ($result->num_rows > 0) {
+        $current_balance = $result->fetch_assoc()['coin_balance'];
+        if ($current_balance < $coins_to_deduct) {
+            echo json_encode(['success' => false, 'message' => 'Insufficient coins']);
+            exit;
+        }
+        
+        // Deduct coins
+        $update_balance = $conn->prepare("UPDATE tbl_coinwallet SET coin_balance = coin_balance - ? WHERE userid = ?");
+        $update_balance->bind_param("ii", $coins_to_deduct, $_SESSION['userid']);
+        if (!$update_balance->execute()) {
+            echo json_encode(['success' => false, 'message' => 'Failed to deduct coins']);
+            exit;
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'No coin wallet found']);
+        exit;
+    }
+}
+
 // Get POST data
 $request_id = $_POST['request_id'];
 $tutor_id = $_POST['tutor_id'];
