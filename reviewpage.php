@@ -23,8 +23,12 @@ if ($result->num_rows == 0) {
 $student = $result->fetch_assoc();
 $student_id = (int)$student['student_id'];
 
-// Check if tutor_id is provided in URL
-$tutor_id = isset($_GET['tutor_id']) ? (int)$_GET['tutor_id'] : 0;
+// Check if tutor_id is provided in POST or GET
+if (isset($_POST['tutor_id'])) {
+    $tutor_id = (int)$_POST['tutor_id'];
+} else {
+    $tutor_id = isset($_GET['tutor_id']) ? (int)$_GET['tutor_id'] : 0;
+}
 
 // If no tutor_id or invalid, redirect back to dashboard
 if ($tutor_id <= 0) {

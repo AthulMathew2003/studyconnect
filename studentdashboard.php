@@ -426,6 +426,45 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                         </div>
                                     </div>
                                     
+                                    <!-- Add rating display section -->
+                                    <div class="tutor-rating">
+                                        <?php 
+                                        // Fetch the average rating for this tutor
+                                        $tutor_id = $row['tutor_id'];
+                                        $rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                                         FROM tbl_review 
+                                                         WHERE tutor_id = $tutor_id";
+                                        $rating_result = $conn->query($rating_query);
+                                        $rating_data = $rating_result->fetch_assoc();
+                                        $avg_rating = $rating_data['avg_rating'] ? round($rating_data['avg_rating'] * 2) / 2 : 0; // Round to nearest 0.5
+                                        $review_count = $rating_data['review_count'];
+                                        ?>
+                                        <div class="stars-container">
+                                            <?php 
+                                            // Display stars based on rating
+                                            for ($i = 1; $i <= 5; $i++) {
+                                                if ($i <= $avg_rating) {
+                                                    echo '<i class="fas fa-star"></i>';
+                                                } elseif ($i - 0.5 == $avg_rating) {
+                                                    echo '<i class="fas fa-star-half-alt"></i>';
+                                                } else {
+                                                    echo '<i class="far fa-star"></i>';
+                                                }
+                                            }
+                                            ?>
+                                        </div>
+                                        <div class="rating-text">
+                                            <?php echo number_format($avg_rating, 1); ?> (<?php echo $review_count; ?> reviews)
+                                        </div>
+                                        <!-- Add Leave Review form with POST method -->
+                                        <form action="reviewpage.php" method="POST" class="review-form">
+                                            <input type="hidden" name="tutor_id" value="<?php echo $tutor_id; ?>">
+                                            <button type="submit" class="leave-review-btn">
+                                                <i class="fas fa-pen"></i> Leave Review
+                                            </button>
+                                        </form>
+                                    </div>
+                                    
                                     <div class="tutor-details-grid">
                                         <div class="detail-item">
                                             <div class="detail-icon">
@@ -516,6 +555,45 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                                 <?php echo htmlspecialchars($row['city'] . ', ' . $row['state']); ?>
                                             </p>
                                         </div>
+                                    </div>
+                                    
+                                    <!-- Add rating display section for direct request card -->
+                                    <div class="tutor-rating">
+                                        <?php 
+                                        // Fetch the average rating for this tutor
+                                        $tutor_id = $row['tutor_id'];
+                                        $rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                                         FROM tbl_review 
+                                                         WHERE tutor_id = $tutor_id";
+                                        $rating_result = $conn->query($rating_query);
+                                        $rating_data = $rating_result->fetch_assoc();
+                                        $avg_rating = $rating_data['avg_rating'] ? round($rating_data['avg_rating'] * 2) / 2 : 0; // Round to nearest 0.5
+                                        $review_count = $rating_data['review_count'];
+                                        ?>
+                                        <div class="stars-container">
+                                            <?php 
+                                            // Display stars based on rating
+                                            for ($i = 1; $i <= 5; $i++) {
+                                                if ($i <= $avg_rating) {
+                                                    echo '<i class="fas fa-star"></i>';
+                                                } elseif ($i - 0.5 == $avg_rating) {
+                                                    echo '<i class="fas fa-star-half-alt"></i>';
+                                                } else {
+                                                    echo '<i class="far fa-star"></i>';
+                                                }
+                                            }
+                                            ?>
+                                        </div>
+                                        <div class="rating-text">
+                                            <?php echo number_format($avg_rating, 1); ?> (<?php echo $review_count; ?> reviews)
+                                        </div>
+                                        <!-- Add Leave Review form with POST method -->
+                                        <form action="reviewpage.php" method="POST" class="review-form">
+                                            <input type="hidden" name="tutor_id" value="<?php echo $tutor_id; ?>">
+                                            <button type="submit" class="leave-review-btn">
+                                                <i class="fas fa-pen"></i> Leave Review
+                                            </button>
+                                        </form>
                                     </div>
                                     
                                     <div class="tutor-details-grid">
@@ -643,6 +721,16 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                     if ($result && $result->num_rows > 0) {
                         while ($row = $result->fetch_assoc()) {
                             $statusClass = strtolower($row['status']);
+                            
+                            // Get average rating for this tutor
+                            $tutor_id = (int)$row['tutor_id'];
+                            $rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                           FROM tbl_review 
+                                           WHERE tutor_id = $tutor_id";
+                            $rating_result = $conn->query($rating_query);
+                            $rating_data = $rating_result->fetch_assoc();
+                            $avg_rating = $rating_data['avg_rating'] ? round($rating_data['avg_rating'] * 2) / 2 : 0;
+                            $review_count = $rating_data['review_count'];
                             ?>
                             <div class="message-card">
                                 <div class="message-header">
@@ -666,6 +754,34 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                     <div class="response-details">
                                         <h4>Tutor's Response</h4>
                                         <p><?php echo nl2br(htmlspecialchars($row['message'])); ?></p>
+                                </div>
+
+                                    <!-- Tutor Rating Section -->
+                                    <div class="tutor-rating-section">
+                                        <h4>Tutor Rating</h4>
+                                        <div class="rating-display">
+                                            <div class="stars-container">
+                            <?php
+                                                // Display stars based on average rating
+                                                for ($i = 1; $i <= 5; $i++) {
+                                                    if ($i <= floor($avg_rating)) {
+                                                        echo '<i class="fas fa-star"></i>';
+                                                    } elseif ($i - 0.5 == $avg_rating) {
+                                                        echo '<i class="fas fa-star-half-alt"></i>';
+                                                    } else {
+                                                        echo '<i class="far fa-star"></i>';
+                                                    }
+                                                }
+                                                ?>
+                                            </div>
+                                            <span class="rating-text">
+                                                <?php echo number_format($avg_rating, 1); ?> 
+                                                (<?php echo $review_count; ?> <?php echo $review_count == 1 ? 'review' : 'reviews'; ?>)
+                                            </span>
+                                        </div>
+                                        <a href="reviewpage.php?tutor_id=<?php echo $tutor_id; ?>" class="view-reviews-btn">
+                                            <i class="fas fa-comment-alt"></i> View Reviews
+                                        </a>
                                     </div>
                                 </div>
 
@@ -969,6 +1085,16 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                         while ($row = $result->fetch_assoc()) {
                             $profile_photo = $row['profile_photo'] ? 'uploads/profile_photos/' . $row['profile_photo'] : 'assets/default-profile.png';
                             $subjects = explode(',', $row['subjects']);
+                            
+                            // Get average rating for this tutor
+                            $tutor_id = $row['tutor_id'];
+                            $rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                             FROM tbl_review 
+                                             WHERE tutor_id = $tutor_id";
+                            $rating_result = $conn->query($rating_query);
+                            $rating_data = $rating_result->fetch_assoc();
+                            $avg_rating = $rating_data['avg_rating'] ? round($rating_data['avg_rating'], 1) : 0;
+                            $review_count = $rating_data['review_count'];
                             ?>
                             <div class="teacher-resource-card" 
                                  data-subjects="<?php echo htmlspecialchars($row['subjects']); ?>"
@@ -979,6 +1105,24 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                     </div>
                                     <div class="teacher-basic-info">
                                         <h3><?php echo htmlspecialchars($row['username']); ?></h3>
+                                        <div class="teacher-rating">
+                                            <div class="stars">
+                                                <?php 
+                                                // Display stars based on rating
+                                                for ($i = 1; $i <= 5; $i++) {
+                                                    if ($i <= $avg_rating) {
+                                                        echo '<i class="fas fa-star"></i>';
+                                                    } elseif ($i - 0.5 <= $avg_rating) {
+                                                        echo '<i class="fas fa-star-half-alt"></i>';
+                                                    } else {
+                                                        echo '<i class="far fa-star"></i>';
+                                                    }
+                                                }
+                                                ?>
+                                                <span class="rating-value"><?php echo $avg_rating; ?></span>
+                                                <span class="review-count">(<?php echo $review_count; ?> reviews)</span>
+                                            </div>
+                                        </div>
                                         <p class="location">
                                             <i class="fas fa-map-marker-alt"></i>
                                             <?php echo htmlspecialchars($row['city']) . ', ' . htmlspecialchars($row['state']); ?>
@@ -1049,6 +1193,11 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                                             <i class="fas fa-handshake"></i> Connect
                                         </button>
                                     <?php endif; ?>
+                                    
+                                    <!-- Add Review Button -->
+                                    <a href="reviewpage.php?tutor_id=<?php echo $row['tutor_id']; ?>" class="review-btn">
+                                        <i class="fas fa-star"></i> Review
+                                    </a>
                                 </div>
                             </div>
                             <?php
@@ -1778,6 +1927,30 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                     });
                 });
             }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add dynamic rating-based styling to cards
+            const tutorCards = document.querySelectorAll('.tutor-card');
+            
+            tutorCards.forEach(card => {
+                const ratingText = card.querySelector('.rating-text');
+                if (ratingText) {
+                    const rating = parseFloat(ratingText.textContent);
+                    
+                    // Remove any existing rating classes
+                    card.classList.remove('high-rated', 'mid-rated', 'low-rated');
+                    
+                    // Add class based on rating value
+                    if (rating >= 4.0) {
+                        card.classList.add('high-rated');
+                    } else if (rating >= 3.0) {
+                        card.classList.add('mid-rated');
+                    } else if (rating > 0) {
+                        card.classList.add('low-rated');
+                    }
+                }
+            });
         });
     </script>
 
@@ -3633,6 +3806,372 @@ $_SESSION['back_view'] = 'studentdashboard.php';
     
     .connect-submit-btn:hover {
         background-color: #45a049;
+    }
+    
+    .review-btn {
+        background-color: #FFD700;
+        color: #333;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 15px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+    
+    .review-btn i {
+        margin-right: 5px;
+    }
+    
+    .review-btn:hover {
+        background-color: #FFC107;
+        transform: translateY(-2px);
+    }
+    
+    .teacher-actions {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        margin-top: 15px;
+    }
+
+    /* Remove hover effects including any blur */
+    .teacher-resource-card:hover,
+    .teacher-resource-card *:hover {
+        filter: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: inherit !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    /* Add this to your CSS styles */
+    .tutor-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .tutor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    .tutor-rating {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 15px;
+        background: #f9f9f9;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 10px;
+    }
+
+    .stars-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .stars-container i {
+        color: #FFD700;
+        font-size: 14px;
+        margin-right: 2px;
+    }
+
+    .rating-text {
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .tutor-actions {
+        display: flex;
+        padding: 15px;
+        gap: 10px;
+        border-top: 1px solid #eee;
+    }
+
+    .message-btn, .profile-btn, .review-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .message-btn {
+        background: #8672ff;
+        color: white;
+    }
+
+    .profile-btn {
+        background: #f3f0ff;
+        color: #8672ff;
+    }
+
+    .review-btn {
+        background: #FFD700;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .message-btn:hover, .profile-btn:hover, .review-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .message-btn i, .profile-btn i, .review-btn i {
+        margin-right: 5px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .tutor-actions {
+            flex-direction: column;
+        }
+        
+        .message-btn, .profile-btn, .review-btn {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+    }
+
+    /* Style variations for different card types */
+    .response-card {
+        border-left: 4px solid #8672ff;
+    }
+
+    .direct-request-card {
+        border-left: 4px solid #4CAF50;
+    }
+
+    /* Dynamically change card color based on rating */
+    .high-rated {
+        border-left: 4px solid #FFD700;
+    }
+
+    .mid-rated {
+        border-left: 4px solid #FFA500;
+    }
+
+    .low-rated {
+        border-left: 4px solid #FF6347;
+    }
+
+    /* Style for the Leave Review button */
+    .review-form {
+        margin-top: 8px;
+        text-align: center;
+    }
+
+    .leave-review-btn {
+        background-color: #FFD700;
+        color: #333;
+        border: none;
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .leave-review-btn:hover {
+        background-color: #FFC107;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .leave-review-btn i {
+        margin-right: 5px;
+        font-size: 10px;
+    }
+
+    /* Update the tutor-rating container to accommodate the new button */
+    .tutor-rating {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 15px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        margin-bottom: 12px;
+    }
+
+    /* Styles for the tutor rating section */
+    .tutor-rating {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 15px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .stars-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .stars-container i {
+        color: #FFD700;
+        font-size: 14px;
+        margin-right: 2px;
+    }
+
+    .rating-text {
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+
+    /* Style for the Leave Review button and form */
+    .review-form {
+        margin-top: 8px;
+        text-align: center;
+        width: 100%;
+    }
+
+    .leave-review-btn {
+        background-color: #FFD700;
+        color: #333;
+        border: none;
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        width: 120px;
+    }
+
+    .leave-review-btn:hover {
+        background-color: #FFC107;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .leave-review-btn i {
+        margin-right: 5px;
+        font-size: 10px;
+    }
+
+    /* Make sure both card types have consistent styling */
+    .tutor-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .tutor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Style variations for different card types */
+    .response-card {
+        border-left: 4px solid #8672ff;
+    }
+
+    .direct-request-card {
+        border-left: 4px solid #4CAF50;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .review-form {
+            width: 100%;
+        }
+        
+        .leave-review-btn {
+            width: 100%;
+            max-width: 200px;
+        }
+    }
+
+    /* ... existing styles ... */
+    
+    /* Tutor Rating Section Styles */
+    .tutor-rating-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+    }
+    
+    .tutor-rating-section h4 {
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #333;
+    }
+    
+    .rating-display {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .stars-container {
+        display: flex;
+        margin-right: 10px;
+    }
+    
+    .stars-container i {
+        color: #FFD700;
+        font-size: 16px;
+        margin-right: 2px;
+    }
+    
+    .rating-text {
+        font-size: 14px;
+        color: #666;
+    }
+    
+    .view-reviews-btn {
+        display: inline-block;
+        background-color: #8672ff;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+    
+    .view-reviews-btn i {
+        margin-right: 5px;
+    }
+    
+    .view-reviews-btn:hover {
+        background-color: #7561ff;
+        transform: translateY(-2px);
     }
     </style>
 </body>

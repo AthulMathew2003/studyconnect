@@ -1527,6 +1527,9 @@ $tutor_query->close();
           <a href="#" class="nav-link" onclick="showContent('tutoring-requests')">
             <i class="fas fa-bell"></i> Tutoring Requests
           </a>
+          <a href="#" class="nav-link" onclick="showContent('reviews')">
+            <i class="fas fa-star"></i> Reviews
+          </a>
           <a href="#" class="nav-link" onclick="showContent('settings')">
             <i class="fas fa-cog"></i> Settings
           </a>
@@ -1543,12 +1546,26 @@ $tutor_query->close();
             <div class="ratings-reviews">
               ⭐
               <div class="dropdown-menu">
+                <?php
+                // Get average rating for the tutor
+                $avg_rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                    FROM tbl_review 
+                                    WHERE tutor_id = $tutor_id";
+                $avg_rating_result = $conn->query($avg_rating_query);
+                
+                if ($avg_rating_result && $avg_rating_data = $avg_rating_result->fetch_assoc()) {
+                    $avg_rating = $avg_rating_data['avg_rating'] ? number_format($avg_rating_data['avg_rating'], 1) : "N/A";
+                    $review_count = $avg_rating_data['review_count'] ? $avg_rating_data['review_count'] : 0;
+                } else {
+                    $avg_rating = "N/A";
+                    $review_count = 0;
+                }
+                ?>
                 <div class="ratings-stat">
-                  <span class="star-rating">⭐ 4.8</span>
-                  <span>(120 reviews)</span>
+                  <span class="star-rating">⭐ <?php echo $avg_rating; ?></span>
+                  <span>(<?php echo $review_count; ?> reviews)</span>
                 </div>
-                <a href="#">View All Reviews</a>
-                <a href="#">Rating Statistics</a>
+                <a href="reviewpage.php?tutor_id=<?php echo $tutor_id; ?>">View All Reviews</a>
               </div>
             </div>
             <div class="coin-wallet">
@@ -1602,8 +1619,23 @@ $tutor_query->close();
                 <h3>Rating</h3>
                 <span>⭐</span>
               </div>
-              <div class="stat-value">4.8</div>
-              <div class="stat-trend neutral">120 reviews</div>
+              <?php
+              // Get average rating for the tutor
+              $avg_rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                  FROM tbl_review 
+                                  WHERE tutor_id = $tutor_id";
+              $avg_rating_result = $conn->query($avg_rating_query);
+              
+              if ($avg_rating_result && $avg_rating_data = $avg_rating_result->fetch_assoc()) {
+                  $avg_rating = $avg_rating_data['avg_rating'] ? number_format($avg_rating_data['avg_rating'], 1) : "N/A";
+                  $review_count = $avg_rating_data['review_count'] ? $avg_rating_data['review_count'] : 0;
+              } else {
+                  $avg_rating = "N/A";
+                  $review_count = 0;
+              }
+              ?>
+              <div class="stat-value"><?php echo $avg_rating; ?></div>
+              <div class="stat-trend neutral"><?php echo $review_count; ?> reviews</div>
             </div>
           </div>
         </div>
@@ -2103,6 +2135,126 @@ $tutor_query->close();
                 }
                 ?>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="reviews-content" class="content-section">
+          <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="margin-bottom: 2rem; color: var(--accent-color);">My Reviews</h2>
+            
+            <?php
+            // Get average rating for the tutor
+            $avg_rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                                FROM tbl_review 
+                                WHERE tutor_id = $tutor_id";
+            $avg_rating_result = $conn->query($avg_rating_query);
+            
+            if ($avg_rating_result && $avg_rating_data = $avg_rating_result->fetch_assoc()) {
+                $avg_rating = $avg_rating_data['avg_rating'] ? number_format($avg_rating_data['avg_rating'], 1) : "N/A";
+                $review_count = $avg_rating_data['review_count'] ? $avg_rating_data['review_count'] : 0;
+            } else {
+                $avg_rating = "N/A";
+                $review_count = 0;
+            }
+            ?>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; padding: 1rem; background-color: #f8f9fa; border-radius: 8px;">
+              <div>
+                <h3 style="margin-bottom: 0.5rem; color: var(--text-color);">Overall Rating</h3>
+                <p style="color: #666;">Based on <?php echo $review_count; ?> reviews</p>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 3rem; color: var(--accent-color); font-weight: bold;"><?php echo $avg_rating; ?></div>
+                <div style="color: gold; font-size: 1.5rem;">
+                  <?php
+                  // Display stars based on average rating
+                  $full_stars = floor($avg_rating);
+                  $half_star = $avg_rating - $full_stars >= 0.5;
+                  
+                  for ($i = 1; $i <= 5; $i++) {
+                      if ($i <= $full_stars) {
+                          echo "★"; // Full star
+                      } elseif ($i == $full_stars + 1 && $half_star) {
+                          echo "☆"; // Half star (using empty star as simplified representation)
+                      } else {
+                          echo "☆"; // Empty star
+                      }
+                  }
+                  ?>
+                </div>
+              </div>
+            </div>
+            
+            <div class="reviews-list" style="display: grid; gap: 1.5rem;">
+              <?php
+              // Get all reviews for this tutor with student information
+              $reviews_query = "SELECT r.*, s.student_id, s.profilephoto, u.username, u.email, subj.subject
+                              FROM tbl_review r
+                              JOIN tbl_student s ON r.student_id = s.student_id
+                              JOIN users u ON s.userid = u.userid
+                              LEFT JOIN tbl_subject subj ON r.subject_id = subj.subject_id
+                              WHERE r.tutor_id = $tutor_id
+                              ORDER BY r.created_at DESC";
+              
+              $reviews_result = $conn->query($reviews_query);
+              
+              if ($reviews_result->num_rows > 0) {
+                  while ($review = $reviews_result->fetch_assoc()) {
+                      $date = date('M d, Y', strtotime($review['created_at']));
+                      $subject = $review['subject'] ? htmlspecialchars($review['subject']) : 'General';
+                      
+                      // Get profile photo from correct path
+                      $profile_photo = "1.webp"; // Default photo
+                      if (!empty($review['profilephoto'])) {
+                          $photo_path = "uploads/profile_photos/" . $review['profilephoto'];
+                          // Check if file exists
+                          if (file_exists($photo_path)) {
+                              $profile_photo = $photo_path;
+                          }
+                      }
+                      
+                      // Display individual review
+                      ?>
+                      <div style="padding: 1.5rem; border: 1px solid var(--input-color); border-radius: 12px; background: white;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
+                          <div style="display: flex; align-items: center; gap: 1rem;">
+                            <img src="<?php echo $profile_photo; ?>" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                            <div>
+                              <h4 style="margin-bottom: 0.2rem; color: var(--text-color);"><?php echo htmlspecialchars($review['username']); ?></h4>
+                              <p style="font-size: 0.9rem; color: #666;">Subject: <?php echo $subject; ?></p>
+                            </div>
+                          </div>
+                          <div style="text-align: right;">
+                            <div style="color: gold; font-size: 1.2rem; margin-bottom: 0.2rem;">
+                              <?php
+                              // Display stars for this review
+                              $rating = $review['rating'];
+                              for ($i = 1; $i <= 5; $i++) {
+                                  echo $i <= $rating ? "★" : "☆";
+                              }
+                              ?>
+                            </div>
+                            <p style="font-size: 0.8rem; color: #666;"><?php echo $date; ?></p>
+                          </div>
+                        </div>
+                        
+                        <p style="color: #333; line-height: 1.5;">
+                          <?php echo htmlspecialchars($review['comment'] ?: 'No comment provided.'); ?>
+                        </p>
+                      </div>
+                      <?php
+                  }
+              } else {
+                  ?>
+                  <div style="text-align: center; padding: 3rem; background: rgba(134, 114, 255, 0.05); border-radius: 12px;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+                    <h3 style="color: var(--text-color); margin-bottom: 0.5rem;">No Reviews Yet</h3>
+                    <p style="color: #666;">You haven't received any reviews from your students yet.</p>
+                  </div>
+                  <?php
+              }
+              ?>
             </div>
           </div>
         </div>
