@@ -2456,28 +2456,93 @@ $tutor_query->close();
     
     // Add this function to your existing JavaScript
     function updateRequestStatus(requestId, status) {
-      if (confirm('Are you sure you want to ' + status + ' this request?')) {
+        if (status === 'approved') {
+            // Show confirmation modal
+            const modal = document.querySelector('.accept-request-modal');
+            modal.style.display = 'flex';
+            modal.dataset.requestId = requestId;
+        } else {
+            if (confirm('Are you sure you want to reject this request?')) {
+                // Direct update for rejection
+                fetch('update_request_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `request_id=${requestId}&status=rejected`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to update request status'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating request status');
+                });
+            }
+        }
+    }
+
+    function closeAcceptModal() {
+        document.querySelector('.accept-request-modal').style.display = 'none';
+    }
+
+    function confirmAcceptRequest() {
+        const modal = document.querySelector('.accept-request-modal');
+        const requestId = modal.dataset.requestId;
+        
         fetch('update_request_status.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: 'request_id=' + requestId + '&status=' + status
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `request_id=${requestId}&status=approved&deduct_coins=50`
         })
         .then(response => response.json())
         .then(data => {
-          if (data.success) {
-            // Reload the page to show updated status
-            location.reload();
-          } else {
-            alert('Error updating request status');
-          }
+            if (data.success) {
+                // Update all coin balance displays
+                const coinAmountElements = document.querySelectorAll('.coin-amount');
+                coinAmountElements.forEach(element => {
+                    element.textContent = data.new_balance;
+                });
+                
+                closeAcceptModal();
+                location.reload();
+            } else {
+                closeAcceptModal();
+                
+                // Show error in insufficient coins modal
+                const insufficientModal = document.querySelector('.insufficient-coins-modal');
+                const messageDiv = document.getElementById('insufficient-coins-message');
+                
+                if (data.message === 'Insufficient coins') {
+                    messageDiv.innerHTML = `
+                        <p>You need at least 50 coins to accept this request.</p>
+                        <p style="margin: 1rem 0;">Your current balance: <span class="coin-amount">${data.current_balance}</span> coins</p>
+                        <button onclick="window.location.href='buy_coins.php'" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer; margin-bottom: 1rem;">
+                            Buy Coins
+                        </button>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <p>Error: ${data.message}</p>
+                        <p style="margin: 1rem 0;">Please try again later.</p>
+                    `;
+                }
+                
+                insufficientModal.style.display = 'flex';
+            }
         })
         .catch(error => {
-          console.error('Error:', error);
-          alert('Error updating request status');
+            console.error('Error:', error);
+            alert('Error updating request status');
+            closeAcceptModal();
         });
-      }
     }
 
     // JavaScript to handle chat functionality
@@ -2780,3 +2845,20 @@ $tutor_query->close();
     </script>
   </body>
 </html>
+
+<!-- Add this modal HTML just before the closing </body> tag -->
+<div class="accept-request-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div class="popup-content" style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; text-align: center;">
+        <h3 style="color: var(--accent-color); margin-bottom: 1rem;">Accept Student Request</h3>
+        <p>Accepting this request will cost 50 coins.</p>
+        <p style="margin: 1rem 0;">Your current balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?></span> coins</p>
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+            <button onclick="confirmAcceptRequest()" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer;">
+                Confirm
+            </button>
+            <button onclick="closeAcceptModal()" style="background: #f3f0ff; color: var(--text-color); border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer;">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
