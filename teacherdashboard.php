@@ -1641,6 +1641,23 @@ $tutor_query->close();
                         <option value="both">Both</option>
                     </select>
                 </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Location</label>
+                    <select class="filter-select" id="location-filter">
+                        <option value="all">All Locations</option>
+                        <?php
+                        // Fetch unique locations from tbl_studentlocation
+                        $location_query = "SELECT DISTINCT city, state FROM tbl_studentlocation ORDER BY city, state";
+                        $location_result = $conn->query($location_query);
+                        while ($location = $location_result->fetch_assoc()) {
+                            $location_value = $location['city'] . ', ' . $location['state'];
+                            echo '<option value="' . htmlspecialchars($location_value) . '">' 
+                                 . htmlspecialchars($location_value) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
             </div>
 
             <div class="requests-grid">
@@ -2623,21 +2640,24 @@ $tutor_query->close();
         }, 100); // Small delay to ensure tab switch is complete
     }
 
-    // Add filter functionality
+    // Update the filter functionality
     document.addEventListener('DOMContentLoaded', function() {
         const subjectFilter = document.getElementById('subject-filter');
         const modeFilter = document.getElementById('mode-filter');
+        const locationFilter = document.getElementById('location-filter');
         
         // Function to apply filters
         function applyFilters() {
             const subject = subjectFilter.value;
             const mode = modeFilter.value;
+            const location = locationFilter.value;
             
             // Create FormData object
             const formData = new FormData();
             formData.append('tutor_id', <?php echo $tutor_id; ?>);
             formData.append('subject', subject);
             formData.append('mode', mode);
+            formData.append('location', location);
             
             // Fetch filtered requests
             fetch('fetch_requests.php', {
@@ -2686,9 +2706,10 @@ $tutor_query->close();
             });
         }
         
-        // Add event listeners to filters
+        // Add event listeners to all filters
         subjectFilter.addEventListener('change', applyFilters);
         modeFilter.addEventListener('change', applyFilters);
+        locationFilter.addEventListener('change', applyFilters);
         
         // Initial load with default filters
         applyFilters();
