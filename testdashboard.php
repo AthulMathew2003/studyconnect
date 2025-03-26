@@ -39,6 +39,31 @@ $tutor = $tutor_result->fetch_assoc();
 $tutor_id = $tutor['tutor_id'];
 $tutor_query->close();
 
+// Build the WHERE clause based on filters
+$where_conditions = [];
+$params = [];
+$types = "";
+
+if (!empty($_GET['subject'])) {
+    $where_conditions[] = "tbl_request.subject = ?";
+    $params[] = $_GET['subject'];
+    $types .= "s";
+}
+
+// Construct the base query
+$query = "SELECT * FROM tbl_request";
+if (!empty($where_conditions)) {
+    $query .= " WHERE " . implode(" AND ", $where_conditions);
+}
+
+// Prepare and execute the query
+$stmt = $conn->prepare($query);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$requestresult = $stmt->get_result();
+
 ?>
 
 <!DOCTYPE html>
@@ -117,28 +142,29 @@ $tutor_query->close();
       }
 
       .nav-links {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        list-style: none;
       }
 
-      .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        padding: 0.8rem;
+      .nav-links li {
+        margin-bottom: 1rem;
+      }
+
+      .nav-links a {
         color: var(--text-color);
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        padding: 0.8rem;
         border-radius: 8px;
         transition: 0.3s;
       }
 
-      .nav-link:hover {
+      .nav-links a:hover {
         background: var(--input-color);
         color: var(--accent-color);
       }
 
-      .nav-link.active {
+      .nav-links a.active {
         background: var(--accent-color);
         color: var(--base-color);
       }
@@ -796,11 +822,6 @@ $tutor_query->close();
         transition: all 0.3s ease;
       }
 
-      .popup-content .confirm-connect {
-        background: var(--accent-color);
-        color: white;
-      }
-
       .popup-content .confirm-connect:hover {
         background: #7561ff;
       }
@@ -1075,6 +1096,514 @@ $tutor_query->close();
           flex-direction: column;
         }
       }
+
+      .nav-links {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.8rem;
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: 0.3s;
+      }
+
+      .nav-link:hover {
+        background: var(--input-color);
+        color: var(--accent-color);
+      }
+
+      .nav-link.active {
+        background: var(--accent-color);
+        color: var(--base-color);
+      }
+
+      .content-section {
+        display: none;
+      }
+
+      .content-section.active {
+        display: block;
+      }
+
+      /* Chat Layout Styles */
+      .chat-layout {
+        display: flex;
+        height: 80vh;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+
+      /* Chat List Styles */
+      .chat-list {
+        width: 30%;
+        border-right: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+      }
+
+      .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f5f5f5;
+      }
+
+      /* Chat Messages Section */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background-color: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Message Styles */
+      .message {
+        max-width: 70%;
+        margin-bottom: 12px;
+        display: flex;
+        clear: both;
+      }
+
+      .message.sent {
+        align-self: flex-end;
+        justify-content: flex-end;
+      }
+
+      .message.received {
+        align-self: flex-start;
+      }
+
+      .message-content {
+        padding: 10px 15px;
+        border-radius: 18px;
+        position: relative;
+        word-wrap: break-word;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
+      }
+
+      .message.sent .message-content {
+        background-color: #0084ff;
+        color: white;
+        border-top-right-radius: 5px;
+        margin-left: 10px;
+      }
+
+      .message.received .message-content {
+        background-color: white;
+        color: #333;
+        border-top-left-radius: 5px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        margin-right: 10px;
+      }
+
+      .message-time {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.7);
+        text-align: right;
+        display: block;
+        margin-top: 5px;
+      }
+
+      .message.received .message-time {
+        color: #999;
+      }
+
+      /* Date Separator */
+      .message-date {
+        text-align: center;
+        margin: 15px 0;
+        font-size: 0.8rem;
+        color: #888;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .message-date:before, .message-date:after {
+        content: "";
+        height: 1px;
+        background-color: #ddd;
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      /* Chat Input Area */
+      .chat-input {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: white;
+        border-top: 1px solid #eee;
+      }
+
+      .message-input {
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      .message-input textarea {
+        width: 100%;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 20px;
+        background-color: #f0f0f0;
+        font-size: 14px;
+        resize: none;
+        overflow-y: auto;
+        max-height: 150px;
+        min-height: 40px;
+        font-family: inherit;
+      }
+
+      .message-input textarea:focus {
+        outline: none;
+        background-color: #e8e8e8;
+      }
+
+      /* Send Button */
+      .send-btn-main {
+        background-color: #0084ff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 15px;
+        margin-left: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+
+      .send-btn-main i {
+        margin-right: 5px;
+      }
+
+      .send-btn-main:hover {
+        background-color: #0078e7;
+      }
+
+      .send-btn-main:active {
+        background-color: #0069cc;
+      }
+
+      /* Chat Contacts */
+      .chat-contacts {
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      .chat-contact {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .chat-contact:hover {
+        background-color: #f5f5f5;
+      }
+
+      .chat-contact.active {
+        background-color: #e9f3ff;
+      }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .contact-name {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .contact-status {
+        font-size: 0.8rem;
+        color: #777;
+      }
+
+      /* Empty States */
+      .no-conversation, .no-messages, .error-message, .no-contacts {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        color: #888;
+        font-style: italic;
+        text-align: center;
+        padding: 20px;
+      }
+
+      /* Chat List Header */
+      .chat-list-header {
+        padding: 15px;
+        border-bottom: 1px solid #eaeaea;
+        background-color: #f9f9f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+      }
+
+      .profile-img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 10px;
+      }
+
+      .user-info h3 {
+        font-size: 16px;
+        margin: 0;
+        color: #333;
+      }
+
+      .status {
+        font-size: 12px;
+        color: #4CAF50;
+      }
+
+      /* Chat Search */
+      .chat-search {
+        padding: 10px 15px;
+        background-color: #fff;
+        border-bottom: 1px solid #eaeaea;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 8px 15px;
+        padding-left: 35px;
+        border: 1px solid #e2e2e2;
+        border-radius: 20px;
+        font-size: 13px;
+        background-color: #f5f5f5;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>');
+        background-repeat: no-repeat;
+        background-position: 10px center;
+        transition: all 0.2s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #bfbfbf;
+        background-color: #fff;
+      }
+
+      /* Chat Contacts */
+      .chat-contacts {
+        overflow-y: auto;
+        flex: 1;
+        background-color: #fff;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+      }
+
+      .chat-contact {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+
+      .chat-contact:hover {
+        background-color: #f8f9fa;
+      }
+
+      .chat-contact.active {
+        background-color: #e7f2ff;
+        border-left: 3px solid #0084ff;
+      }
+      
+      .chat-contact.active .contact-name {
+        color: #0084ff;
+      }
+
+      .contact-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background-color: #0084ff;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      /* Random colors for avatars to differentiate contacts */
+      .chat-contact:nth-child(5n+1) .contact-avatar { background-color: #0084ff; }
+      .chat-contact:nth-child(5n+2) .contact-avatar { background-color: #FF5722; }
+      .chat-contact:nth-child(5n+3) .contact-avatar { background-color: #4CAF50; }
+      .chat-contact:nth-child(5n+4) .contact-avatar { background-color: #9C27B0; }
+      .chat-contact:nth-child(5n+5) .contact-avatar { background-color: #FF9800; }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0; /* Enables text truncation */
+      }
+
+      .contact-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 14px;
+      }
+
+      .contact-status {
+        font-size: 12px;
+        color: #72777a;
+      }
+
+      /* New message indicator */
+      .chat-contact::after {
+        content: "";
+        display: none;
+        width: 8px;
+        height: 8px;
+        background-color: #0084ff;
+        border-radius: 50%;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .chat-contact.has-new-message::after {
+        display: block;
+      }
+
+      /* Empty state */
+      .no-contacts {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 30px 20px;
+        text-align: center;
+        color: #72777a;
+      }
+
+      .no-contacts i {
+        font-size: 40px;
+        color: #d1d1d1;
+        margin-bottom: 15px;
+      }
+
+      .no-contacts p {
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 200px;
+      }
+
+      .filter-section {
+        background: var(--base-color);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+      }
+
+      .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        align-items: end;
+      }
+
+      .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .filter-label {
+        font-size: 0.9rem;
+        color: var(--text-color);
+        font-weight: 500;
+      }
+
+      .filter-item select {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 2px solid var(--input-color);
+        border-radius: 8px;
+        font-size: 1rem;
+        color: var(--text-color);
+        background-color: white;
+        transition: all 0.3s ease;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .filter-btn,
+      .reset-btn {
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .filter-btn {
+        background: var(--accent-color);
+        color: white;
+        border: none;
+        flex: 1;
+      }
+
+      .reset-btn {
+        background: var(--input-color);
+        color: var(--text-color);
+        border: none;
+      }
+
+      .filter-btn:hover,
+      .reset-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
     </style>
   </head>
   <body>
@@ -1082,19 +1611,22 @@ $tutor_query->close();
       <nav class="sidebar">
         <div class="sidebar-logo">StudyConnect</div>
         <div class="nav-links">
-          <a href="#" class="nav-link active" onclick="showContent('dashboard-content')">
+          <a href="#" class="nav-link active" onclick="showContent('dashboard')">
             <i class="fas fa-home"></i> Dashboard
           </a>
-          <a href="#" class="nav-link" onclick="showContent('student-request-content')">
-            <i class="fas fa-user-graduate"></i> Student Requests
+          <a href="#" class="nav-link" onclick="showContent('student-requests')">
+            <i class="fas fa-user-graduate"></i> Find a Student
           </a>
-          <a href="#" class="nav-link" onclick="showContent('messages-content')">
+          <a href="#" class="nav-link" onclick="showContent('messages')">
             <i class="fas fa-comments"></i> Messages
           </a>
-          <a href="#" class="nav-link" onclick="showContent('my-students-content')">
+          <a href="#" class="nav-link" onclick="showContent('my-students')">
             <i class="fas fa-users"></i> My Students
           </a>
-          <a href="#" class="nav-link" onclick="showContent('settings-content')">
+          <a href="#" class="nav-link" onclick="showContent('tutoring-requests')">
+            <i class="fas fa-bell"></i> Tutoring Requests
+          </a>
+          <a href="#" class="nav-link" onclick="showContent('settings')">
             <i class="fas fa-cog"></i> Settings
           </a>
         </div>
@@ -1143,402 +1675,668 @@ $tutor_query->close();
             </div>
           </div>
         </header>
-        <!-- Content sections -->
+      
         <div id="dashboard-content" class="content-section active">
           <div class="dashboard-grid">
-            <!-- Quick Stats Section -->
             <div class="stat-card">
               <div class="stat-header">
                 <h3>Active Students</h3>
-                <span class="stat-icon">👥</span>
+                <span>📚</span>
               </div>
-              <div class="stat-value">256</div>
-              <div class="stat-trend positive">↑ 12% this month</div>
+              <div class="stat-value">24</div>
+              <div class="stat-trend positive">↑ 12% from last month</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-header">
-                <h3> Total Courses </h3>
-                <span class="stat-icon">📊</span>
+                <h3>Total Earnings</h3>
+                <span>💰</span>
               </div>
-              <div class="stat-value">25</div>
-              <div class="stat-trend positive"></div>
+              <div class="stat-value"><?php echo $coin_balance; ?> coins</div>
+              <div class="stat-trend positive">↑ 8% from last month</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-header">
-                <h3>Total Tutors</h3>
-                <span class="stat-icon"></span>
-              </div>
-              <div class="stat-value">3,240</div>
-              <div class="stat-trend positive">↑ 8% this month</div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-header">
-                <h3>Average Rating</h3>
-                <span class="stat-icon">⭐</span>
+                <h3>Rating</h3>
+                <span>⭐</span>
               </div>
               <div class="stat-value">4.8</div>
-              <div class="stat-trend neutral">Same as last month</div>
+              <div class="stat-trend neutral">120 reviews</div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="student-requests-content" class="content-section">
+        <div class="requests-container">
+            <div class="section-header">
+                <h2>Find a Student</h2>
+            </div>
+            
+            <!-- Filter section -->
+            <div class="filter-section">
+                <form id="search-filters" onsubmit="return false;">
+                    <div class="filter-grid">
+                        <div class="filter-item">
+                            <label for="filter-subject" class="filter-label">Subject</label>
+                            <select name="subject" id="filter-subject">
+                                <option value="">All Subjects</option>
+                                <?php
+                                $subject_query = "SELECT * FROM tbl_subject ORDER BY subject";
+                                $subject_result = $conn->query($subject_query);
+                                
+                                while ($row = $subject_result->fetch_assoc()) {
+                                    echo '<option value="' . htmlspecialchars($row['subject']) . '">' . 
+                                         htmlspecialchars($row['subject']) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="filter-mode" class="filter-label">Mode of Learning</label>
+                            <select name="mode" id="filter-mode">
+                                <option value="">All Modes</option>
+                                <option value="online">Online</option>
+                                <option value="offline">Offline</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="filter-location" class="filter-label">Location</label>
+                            <select name="location" id="filter-location">
+                                <option value="">All Locations</option>
+                                <?php
+                                $location_query = "SELECT DISTINCT city, state FROM tbl_studentlocation ORDER BY city";
+                                $location_result = $conn->query($location_query);
+                                
+                                while ($row = $location_result->fetch_assoc()) {
+                                    $location = htmlspecialchars($row['city'] . ', ' . $row['state']);
+                                    echo '<option value="' . $location . '">' . $location . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="filter-rate" class="filter-label">Maximum Rate ($/hour)</label>
+                            <input type="number" id="filter-rate" name="rate" min="0" step="1" placeholder="Max rate">
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-label">&nbsp;</label>
+                            <div class="button-group">
+                                <button type="button" onclick="applyFilters()" class="filter-btn">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <button type="button" onclick="resetFilters()" class="reset-btn">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
 
-            <!-- Recent Requests -->
-            <div class="dashboard-card recent-requests">
-              <h3>Recent Requests</h3>
-              <div class="session-list">
-                <div class="session-item">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Student"
-                    class="activity-avatar"
-                  />
-                  <div class="session-info">
-                    <h4>Emma Watson</h4>
-                    <p>Mathematics • One-on-One • Online</p>
-                    <div class="request-details">
-                      <span class="mode-tag online">💻 Online</span>
-                      <span class="schedule-tag">📅 Flexible Schedule</span>
-                      <span class="duration-tag">⏱️ 1 hour/session</span>
+            <!-- Requests Grid -->
+            <div class="requests-grid">
+  <?php
+            // Default query to show ALL requests without any filters
+            $request_query = "SELECT r.*, 
+                            s.student_id, 
+                            u.username, 
+                            sl.city, 
+                            sl.state, 
+                            sl.country,
+                            (SELECT COUNT(*) FROM tbl_response WHERE request_id = r.request_id) as response_count
+                     FROM tbl_request r
+                     JOIN tbl_student s ON r.student_id = s.student_id
+                     JOIN users u ON s.userid = u.userid
+                     JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
+                     WHERE r.status = 'open'
+                     ORDER BY r.created_at DESC";
+            
+            $result = $conn->query($request_query);
+
+            if ($result->num_rows > 0) {
+                while ($request = $result->fetch_assoc()) {
+                    ?>
+                    <div class="request-card">
+                        <h3 class="student-name"><?php echo htmlspecialchars($request['username']); ?></h3>
+                        <p class="requirements"><?php echo htmlspecialchars($request['description']); ?></p>
+                        <div class="tags">
+                            <span class="tag">📚 <?php echo htmlspecialchars($request['subject']); ?></span>
+                            <span class="tag">💰 $<?php echo htmlspecialchars($request['fee_rate']); ?>/hour</span>
+                            <span class="tag">💻 <?php echo htmlspecialchars($request['mode_of_learning']); ?></span>
+                        </div>
+                        <div class="request-info">
+                            <strong>Location:</strong> <span><?php echo htmlspecialchars($request['city'] . ', ' . $request['state'] . ', ' . $request['country']); ?></span>
+                            <strong>Submitted:</strong> <span><?php echo htmlspecialchars($request['created_at']); ?></span>
+                            <strong>Start Date:</strong> <span><?php echo htmlspecialchars($request['start_date']); ?></span>
+                            <strong>End Date:</strong> <span><?php echo htmlspecialchars($request['end_date']); ?></span>
+                        </div>
+                        <button class="connect-btn" data-request-id="<?php echo $request['request_id']; ?>" 
+                                data-responses="<?php echo $request['response_count']; ?>">
+                            Connect with Student
+                        </button>
+                    </div>
+                    <?php
+                }
+            } else {
+                echo "<p>No student requests found.</p>";
+            }
+            ?>
+            </div>
+        </div>
+
+        <!-- Updated confirmation popup -->
+        <div class="confirmation-popup" style="display: none;">
+            <div class="popup-content">
+                <p>Are you sure you want to connect with this student?</p>
+                <p class="response-count" style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
+                    <span id="applicant-count">0</span> tutors have applied for this request
+                </p>
+                <!-- Add textarea for custom message -->
+                <div style="margin-top: 1rem;">
+                    <label for="connect-message" style="display: block; margin-bottom: 0.5rem;">Message to student:</label>
+                    <textarea 
+                        id="connect-message" 
+                        rows="4" 
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--input-color); border-radius: 4px; margin-bottom: 1rem;"
+                        placeholder="Enter your message to the student..."
+                    >I am interested in helping you with your studies.</textarea>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button class="confirm-connect">Yes</button>
+                    <button class="cancel-connect">No</button>
+                </div>
+            </div>
+        </div>
+
+        </div>
+        </div>
+        
+        <div id="messages-content" class="content-section">
+          <div class="messages-container">
+            <div class="chat-layout">
+              <!-- Chat List Sidebar -->
+              <div class="chat-list">
+                <div class="chat-list-header">
+                  <div class="user-profile">
+                    <img src="1.webp" alt="Profile" class="profile-img">
+                    <div class="user-info">
+                      <h3><?php echo htmlspecialchars($_SESSION['username']); ?></h3>
+                      <span class="status">Online</span>
                     </div>
                   </div>
-                  <div class="request-actions">
-                    <button class="session-action accept">Accept</button>
-                    <button class="session-action decline">Decline</button>
+                  <div class="chat-actions">
+                    <button class="icon-btn">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Chat contacts list -->
+                <div class="chat-contacts">
+                  <?php
+                  // Get approved students from responses
+                  $stmt = $conn->prepare("
+                    SELECT DISTINCT r.tutor_id, r.request_id, s.student_id, u.username
+                    FROM tbl_response r
+                    JOIN tbl_request req ON r.request_id = req.request_id
+                    JOIN tbl_student s ON req.student_id = s.student_id
+                    JOIN users u ON s.userid = u.userid
+                    WHERE r.tutor_id = ? AND r.status = 'approved'
+                  ");
+                  
+                  $stmt->bind_param("i", $tutor_id);
+                  $stmt->execute();
+                  $result = $stmt->get_result();
+                  
+                  // Also get students from approved tutor requests
+                  $tutor_requests = $conn->prepare("
+                    SELECT tr.*, s.*, u.username, u.email, sl.*, t.teaching_mode,
+                           tr.description
+                    FROM tbl_tutorrequest tr
+                    JOIN tbl_student s ON tr.student_id = s.student_id
+                    JOIN users u ON s.userid = u.userid
+                    JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
+                    JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
+                    WHERE tr.tutor_id = ? AND tr.status = 'approved'
+                    GROUP BY tr.tutorrequestid
+                  ");
+                  
+                  $tutor_requests->bind_param("i", $tutor_id);
+                  $tutor_requests->execute();
+                  $requests_result = $tutor_requests->get_result();
+                  
+                  // Combine both results to display all students
+                  $displayed_students = [];
+                  
+                  // Display students from responses
+                  while ($row = $result->fetch_assoc()) {
+                    $student_id = $row['student_id'];
+                    if (!in_array($student_id, $displayed_students)) {
+                      $displayed_students[] = $student_id;
+                      ?>
+                      <div class="chat-contact" data-student-id="<?php echo $student_id; ?>">
+                        <div class="contact-info">
+                          <span class="contact-name"><?php echo htmlspecialchars($row['username']); ?></span>
+                          <span class="contact-status">Student</span>
+                        </div>
+                      </div>
+                      <?php
+                    }
+                  }
+                  
+                  // Display students from tutor requests
+                  while ($row = $requests_result->fetch_assoc()) {
+                    $student_id = $row['student_id'];
+                    if (!in_array($student_id, $displayed_students)) {
+                      $displayed_students[] = $student_id;
+                      ?>
+                      <div class="chat-contact" data-student-id="<?php echo $student_id; ?>">
+                        <div class="contact-info">
+                          <span class="contact-name"><?php echo htmlspecialchars($row['username']); ?></span>
+                          <span class="contact-status">Student</span>
+                        </div>
+                      </div>
+                      <?php
+                    }
+                  }
+                  
+                  if (empty($displayed_students)) {
+                    ?>
+                    <div class="no-contacts">
+                      <p>No students to chat with yet</p>
+                    </div>
+                    <?php
+                  }
+                  ?>
+                </div>
+              </div>
+
+              <!-- Chat Main Area -->
+              <div class="chat-main">
+                <div class="chat-header" id="chat-header">
+                  <div class="chat-contact">
+                    <img src="1.webp" alt="Contact" class="contact-img">
+                    <div class="contact-info">
+                      <h3 id="selected-contact-name">Select a student</h3>
+                      <span class="status" id="selected-contact-status">-</span>
+                    </div>
+                  </div>
+                  <div class="chat-actions">
+                    <button class="icon-btn">
+                      <i class="fas fa-search"></i>
+                    </button>
+                    <button class="icon-btn">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
                   </div>
                 </div>
 
-                <div class="session-item">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Student"
-                    class="activity-avatar"
-                  />
-                  <div class="session-info">
-                    <h4>James Smith</h4>
-                    <p>Physics • Group Study • In-Person</p>
-                    <div class="request-details">
-                      <span class="mode-tag in-person">🏫 In-Person</span>
-                      <span class="schedule-tag">📅 Mon, Wed, Fri</span>
-                      <span class="duration-tag">⏱️ 2 hours/session</span>
-                    </div>
-                  </div>
-                  <div class="request-actions">
-                    <button class="session-action accept">Accept</button>
-                    <button class="session-action decline">Decline</button>
+                <div class="chat-messages" id="chat-messages">
+                  <div class="no-conversation">
+                    <p>Select a student to start chatting</p>
                   </div>
                 </div>
 
-                <div class="session-item">
-                  <img
-                    src="/api/placeholder/40/40"
-                    alt="Student"
-                    class="activity-avatar"
-                  />
-                  <div class="session-info">
-                    <h4>Sophie Chen</h4>
-                    <p>Chemistry • One-on-One • Hybrid</p>
-                    <div class="request-details">
-                      <span class="mode-tag hybrid">🔄 Hybrid</span>
-                      <span class="schedule-tag">📅 Weekends</span>
-                      <span class="duration-tag">⏱️ 1.5 hours/session</span>
-                    </div>
+                <div class="chat-input" id="chat-input" style="display: none;">
+                  <button class="icon-btn">
+                    <i class="fas fa-smile"></i>
+                  </button>
+                  <button class="icon-btn">
+                    <i class="fas fa-paperclip"></i>
+                  </button>
+                  <div class="message-input">
+                    <textarea id="message-text" placeholder="Type a message" rows="1"></textarea>
+                    <input type="hidden" id="selected-student-userid" value="">
                   </div>
-                  <div class="request-actions">
-                    <button class="session-action accept">Accept</button>
-                    <button class="session-action decline">Decline</button>
-                  </div>
+                  <button class="send-btn-main" id="send-message-btn">
+                    <i class="fas fa-paper-plane"></i> Send
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div id="student-request-content" class="content-section">
-          <div class="requests-container">
+        
+        <div id="my-students-content" class="content-section">
+          <div class="my-students-container">
             <div class="section-header">
-              <h2>Student Requests</h2>
+              <h2>My Students</h2>
+              <p class="section-subtitle">Manage your current students and their progress</p>
+            </div>
+            <div class="students-grid">
+              <?php
+              // First query remains the same for responses
+              $stmt = $conn->prepare("
+                  SELECT r.*, req.*, s.*, u.username, u.email, sl.*
+                  FROM tbl_response r
+                  JOIN tbl_request req ON r.request_id = req.request_id
+                  JOIN tbl_student s ON req.student_id = s.student_id
+                  JOIN users u ON s.userid = u.userid
+                  JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
+                  WHERE r.tutor_id = ? AND r.status = 'approved'
+              ");
+              
+              $stmt->bind_param("i", $tutor_id);
+              $stmt->execute();
+              $result = $stmt->get_result();
+              
+              // Second query for tutor requests
+              $tutor_requests = $conn->prepare("
+                  SELECT tr.*, s.*, u.username, u.email, sl.*, t.teaching_mode,
+                         GROUP_CONCAT(subj.subject) as subjects
+                  FROM tbl_tutorrequest tr
+                  JOIN tbl_student s ON tr.student_id = s.student_id
+                  JOIN users u ON s.userid = u.userid
+                  JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
+                  JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
+                  LEFT JOIN tbl_tutorsubject ts ON t.tutor_id = ts.tutor_id
+                  LEFT JOIN tbl_subject subj ON ts.subject_id = subj.subject_id
+                  WHERE tr.tutor_id = ? AND tr.status = 'approved'
+                  GROUP BY tr.tutorrequestid
+              ");
+              
+              $tutor_requests->bind_param("i", $tutor_id);
+              $tutor_requests->execute();
+              $requests_result = $tutor_requests->get_result();
+              
+              if ($result->num_rows > 0 || $requests_result->num_rows > 0) {
+                  // Display students from responses
+                  while ($row = $result->fetch_assoc()) {
+                      displayStudentCard($row, 'response');
+                  }
+                  
+                  // Display students from tutor requests
+                  while ($row = $requests_result->fetch_assoc()) {
+                      displayStudentCard($row, 'request');
+                  }
+              } else {
+                  ?>
+                  <div class="no-students">
+                    <div class="empty-state">
+                      <div class="empty-icon">👥</div>
+                      <h3>No Students Yet</h3>
+                      <p>You don't have any approved student connections yet. Check the Student Requests section to connect with students.</p>
+                    </div>
+                  </div>
+                  <?php
+              }
+              
+              $stmt->close();
+              $tutor_requests->close();
+              
+              // Helper function to display student card
+              function displayStudentCard($row, $type) {
+                  ?>
+                  <div class="student-card">
+                    <div class="student-header">
+                      <img src="<?php echo !empty($row['profilephoto']) ? htmlspecialchars($row['profilephoto']) : '1.webp'; ?>" 
+                           alt="Student" class="student-avatar">
+                      <div class="student-info">
+                        <h3><?php echo htmlspecialchars($row['username']); ?></h3>
+                        <div class="student-location">📍 <?php echo htmlspecialchars($row['city'] . ', ' . $row['country']); ?></div>
+                      </div>
+                    </div>
+                    <div class="student-details">
+                      <div class="detail-item">
+                        <span class="detail-label">Type</span>
+                        <span class="detail-value"><?php echo $type === 'response' ? 'Student Request' : 'Direct Request'; ?></span>
+                      </div>
+                      <?php if ($type === 'response'): ?>
+                      <div class="detail-item">
+                        <span class="detail-label">Subject</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['subject']); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Mode</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['mode_of_learning']); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Fee Rate</span>
+                        <span class="detail-value">$<?php echo htmlspecialchars($row['fee_rate']); ?>/hour</span>
+                      </div>
+                      <?php else: ?>
+                      <div class="detail-item">
+                        <span class="detail-label">Subjects</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['description'] ?? 'Not specified'); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Mode</span>
+                        <span class="detail-value"><?php echo htmlspecialchars($row['teaching_mode']); ?></span>
+                      </div>
+                      <div class="detail-item">
+                        <span class="detail-label">Fee Rate</span>
+                        <span class="detail-value">$<?php echo htmlspecialchars($row['feerate']); ?>/hour</span>
+                      </div>
+                      <?php endif; ?>
+                    </div>
+                    <div class="student-actions">
+                      <button class="action-btn message-btn" onclick="startChat('<?php echo htmlspecialchars($row['username']); ?>')">Message</button>
+                      <button class="action-btn profile-btn" onclick="window.location.href='display_studentprofile.php?student_id=<?php echo $row['student_id']; ?>'">View Profile</button>
+                    </div>
+                  </div>
+                  <?php
+              }
+              ?>
+            </div>
+          </div>
+        </div>
+        
+        <div id="settings-content" class="content-section">
+          <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="margin-bottom: 2rem; color: var(--accent-color);">Settings</h2>
+            
+            <div style="margin-bottom: 2rem;">
+              <h3 style="margin-bottom: 1rem;">Profile Settings</h3>
+              <div style="display: grid; gap: 1rem;">
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem;">Display Name</label>
+                  <input type="text" value="<?php echo htmlspecialchars($_SESSION['username']); ?>" style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
+                </div>
+                <div>
+                  <label style="display: block; margin-bottom: 0.5rem;">Email</label>
+                  <input type="email" value="user@example.com" style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
+                </div>
+              </div>
             </div>
             
-            <div class="filters-container">
-              <div class="filter-group">
-                <span class="filter-label">Location</span>
-                <select class="filter-select">
-                  <option>All Locations</option>
-                  <?php
-                    // Prepare and execute query to get unique locations with city, state, and country
-                    $stmt = $conn->prepare("SELECT DISTINCT city, state, country FROM tbl_studentlocation ORDER BY city, state, country");
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    // Loop through results and create option elements with combined location info
-                    while ($row = $result->fetch_assoc()) {
-                      $location = htmlspecialchars($row['city'] . ', ' . $row['state'] . ', ' . $row['country']);
-                      echo "<option>" . $location . "</option>";
-                    }
-                    $stmt->close();
-                  ?>
-                </select>
-              </div>
-              
-              <div class="filter-group">
-                <span class="filter-label">Subject</span>
-                <select class="filter-select">
-                  <option>All Subjects</option>
-                  <?php
-                    // Prepare and execute query to get subjects
-                    $stmt = $conn->prepare("SELECT subject FROM tbl_subject");
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    // Loop through results and create option elements
-                    while ($row = $result->fetch_assoc()) {
-                      echo "<option>" . htmlspecialchars($row['subject']) . "</option>";
-                    }
-                    $stmt->close();
-                  ?>
-                </select>
-              </div>
-              
-              <div class="filter-group">
-                <span class="filter-label">Mode</span>
-                <select class="filter-select">
-                  <option>All Modes</option>
-                  <option>Online</option>
-                  <option>Offline</option>
-                  <option>Both</option>
-                </select>
-              </div>
-              <div class="filter-group">
-                <button id="search-button" class="search-button" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 20px; cursor: pointer; transition: background 0.3s;">
-                  Search
-                </button>
+            <div style="margin-bottom: 2rem;">
+              <h3 style="margin-bottom: 1rem;">Notification Settings</h3>
+              <div style="display: grid; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" checked> Email notifications for new messages
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" checked> Email notifications for new student requests
+                </label>
               </div>
             </div>
-
-            <div class="requests-grid">
-  <?php
-
-  
-
-  $requestresult = $conn->query("SELECT * FROM tbl_request");
-
-  // Check if there are any requests
-  if ($requestresult->num_rows > 0) {
-      while ($request = $requestresult->fetch_assoc()) {
-          $studentid = $request['student_id'];
-          $studentresult = $conn->query("SELECT * FROM tbl_student WHERE student_id=$studentid");
-          $student = $studentresult->fetch_assoc();
-          $userid = $student['userid'];
-          $userresult = $conn->query("SELECT * FROM users WHERE userid=$userid");
-          $user = $userresult->fetch_assoc(); 
-          $locationresult = $conn->query("SELECT * FROM tbl_studentlocation WHERE student_id=$studentid");
-          $location = $locationresult->fetch_assoc();
-
-          // Get the count of responses for this request
-          $request_id = $request['request_id'];
-          $response_count_query = $conn->prepare("SELECT COUNT(*) as response_count FROM tbl_response WHERE request_id = ?");
-          $response_count_query->bind_param("i", $request_id);
-          $response_count_query->execute();
-          $response_count_result = $response_count_query->get_result();
-          $response_count = $response_count_result->fetch_assoc()['response_count'];
-          $response_count_query->close();
-
-          // Check if tutor has already applied for this request
-          $check_response = $conn->prepare("SELECT response_id FROM tbl_response WHERE request_id = ? AND tutor_id = ?");
-          $check_response->bind_param("ii", $request['request_id'], $tutor_id);
-          $check_response->execute();
-          $response_result = $check_response->get_result();
-          $has_applied = $response_result->num_rows > 0;
-          $check_response->close();
-
-          echo '<div class="request-card' . ($has_applied ? ' applied' : '') . '">';
-          echo '<h3 class="student-name">' . htmlspecialchars($user['username']) . '</h3>';
-          echo '<p class="requirements">' . htmlspecialchars($request['description']) . '</p>';
-          echo '<div class="tags">';
-          echo '<span class="tag">📚 ' . htmlspecialchars($request['subject']) . '</span>';
-          echo '<span class="tag">💰 $' . htmlspecialchars($request['fee_rate']) . '/hour</span>';
-          echo '<span class="tag">💻 ' . htmlspecialchars($request['mode_of_learning']) . '</span>';
-          echo '</div>';
-          echo '<div class="request-info">';
-          echo '<strong>Location:</strong> <span>' . htmlspecialchars($location['city'] . ', ' . $location['state'] . ', ' . $location['country']) . '</span>';
-          echo '<strong>Submitted:</strong> <span>' . htmlspecialchars($request['created_at']) . '</span>';
-          echo '<strong>Start Date:</strong> <span>' . htmlspecialchars($request['start_date']) . '</span>';
-          echo '<strong>End Date:</strong> <span>' . htmlspecialchars($request['end_date']) . '</span>';
-          echo '</div>';
-
-          if ($has_applied) {
-              echo '<div class="applied-badge">Applied</div>';
-          } else {
-              echo '<button class="connect-btn" data-request-id="' . $request['request_id'] . '" data-responses="' . $response_count . '">Connect with Student</button>';
-          }
-
-          echo '</div>';
-      }
-  } else {
-      // No requests found
-      echo "<p>No student requests found.</p>";
-  }
-
-?>
-</div>
-
-<!-- Updated confirmation popup -->
-<div class="confirmation-popup" style="display: none;">
-    <div class="popup-content">
-        <p>Are you sure you want to connect with this student?</p>
-        <p class="response-count" style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
-            <span id="applicant-count">0</span> tutors have applied for this request
-        </p>
-        <!-- Add textarea for custom message -->
-        <div style="margin-top: 1rem;">
-            <label for="connect-message" style="display: block; margin-bottom: 0.5rem;">Message to student:</label>
-            <textarea 
-                id="connect-message" 
-                rows="4" 
-                style="width: 100%; padding: 0.5rem; border: 1px solid var(--input-color); border-radius: 4px; margin-bottom: 1rem;"
-                placeholder="Enter your message to the student..."
-            >I am interested in helping you with your studies.</textarea>
-        </div>
-        <div style="margin-top: 1rem;">
-            <button class="confirm-connect">Yes</button>
-            <button class="cancel-connect">No</button>
-        </div>
-    </div>
-</div>
-
+            
+            <button style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; cursor: pointer;">Save Changes</button>
+          </div>
         </div>
 
-        <div id="messages-content" class="content-section">
-          <h2>Messages</h2>
-          <!-- Messages content will go here -->
-           <h1>hello hi</h1>
-        </div>
-
-       
-
-        <div id="settings-content" class="content-section">
-          <h2>Settings</h2>
-          <h1>hhhdhdhhdhdhdhdhdhd</h1>
-          <!-- Settings content will go here -->
+        <div id="tutoring-requests-content" class="content-section">
+          <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="margin-bottom: 2rem; color: var(--accent-color);">Tutoring Requests</h2>
+            
+            <div style="margin-bottom: 2rem;">
+              <h3 style="margin-bottom: 1rem;">Pending Requests</h3>
+              <div class="requests-list" style="display: grid; gap: 1rem;">
+                <?php
+                // Fetch pending requests (status = 'created')
+                $pending_query = "SELECT tr.*, s.student_id, u.username, u.email 
+                                 FROM tbl_tutorrequest tr
+                                 JOIN tbl_student s ON tr.student_id = s.student_id
+                                 JOIN users u ON s.userid = u.userid
+                                 WHERE tr.tutor_id = $tutor_id AND tr.status = 'created'
+                                 ORDER BY tr.created_at DESC";
+                
+                $pending_result = $conn->query($pending_query);
+                
+                if ($pending_result->num_rows > 0) {
+                  while ($row = $pending_result->fetch_assoc()) {
+                    ?>
+                    <div style="padding: 1rem; border: 1px solid var(--input-color); border-radius: 8px; background: #f8f9fa;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                          <h4 style="color: var(--text-color);"><?php echo htmlspecialchars($row['username']); ?></h4>
+                          <a href="display_studentprofile.php?student_id=<?php echo $row['student_id']; ?>" 
+                             style="font-size: 0.9rem; color: var(--accent-color); text-decoration: none; padding: 0.2rem 0.5rem; border: 1px solid var(--accent-color); border-radius: 4px;">
+                            View Profile
+                          </a>
+                        </div>
+                        <span style="color: #666; font-size: 0.9rem;"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></span>
+                      </div>
+                      <p style="color: #666; margin-bottom: 0.5rem;"><?php echo htmlspecialchars($row['description']); ?></p>
+                      <p style="color: #666; margin-bottom: 0.5rem;">Fee Rate: $<?php echo htmlspecialchars($row['feerate']); ?>/hour</p>
+                      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <button onclick="updateRequestStatus(<?php echo $row['tutorrequestid']; ?>, 'approved')" 
+                                style="background: var(--accent-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                          Accept
+                        </button>
+                        <button onclick="updateRequestStatus(<?php echo $row['tutorrequestid']; ?>, 'rejected')"
+                                style="background: var(--error-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                    <?php
+                  }
+                } else {
+                  echo "<p style='text-align: center; color: #666;'>No pending requests</p>";
+                }
+                ?>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+              <h3 style="margin-bottom: 1rem;">Request History</h3>
+              <div class="history-list" style="display: grid; gap: 1rem;">
+                <?php
+                // Fetch request history (status = 'approved' or 'rejected')
+                $history_query = "SELECT tr.*, s.student_id, u.username, u.email 
+                                 FROM tbl_tutorrequest tr
+                                 JOIN tbl_student s ON tr.student_id = s.student_id
+                                 JOIN users u ON s.userid = u.userid
+                                 WHERE tr.tutor_id = $tutor_id AND tr.status != 'created'
+                                 ORDER BY tr.created_at DESC";
+                
+                $history_result = $conn->query($history_query);
+                
+                if ($history_result->num_rows > 0) {
+                  while ($row = $history_result->fetch_assoc()) {
+                    $status_color = $row['status'] == 'approved' ? '#34c759' : '#ff3b30';
+                    ?>
+                    <div style="padding: 1rem; border: 1px solid var(--input-color); border-radius: 8px; background: white;">
+                      <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <h4 style="color: var(--text-color);"><?php echo htmlspecialchars($row['username']); ?></h4>
+                        <span style="color: <?php echo $status_color; ?>; font-weight: 500;">
+                          <?php echo ucfirst($row['status']); ?>
+                        </span>
+                      </div>
+                      <p style="color: #666; margin-bottom: 0.5rem;"><?php echo htmlspecialchars($row['description']); ?></p>
+                      <span style="color: #666; font-size: 0.9rem;"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></span>
+                    </div>
+                    <?php
+                  }
+                } else {
+                  echo "<p style='text-align: center; color: #666;'>No request history</p>";
+                }
+                ?>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
 
-    <!-- Add footer before closing body tag -->
-    <footer class="main-footer">
-      <div class="footer-content">
-        <div class="footer-section">
-          <!-- <h4>Quick Links</h4>
-          <ul>
-            <li><a href="#">Home</a></li>
-            <li><a href="#">About Us</a></li>
-            <li><a href="#">Contact</a></li>
-            <li><a href="#">Help Center</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h4>Resources</h4>
-          <ul>
-            <li><a href="#">Teaching Guide</a></li>
-            <li><a href="#">Best Practices</a></li>
-            <li><a href="#">Community Forums</a></li>
-            <li><a href="#">Blog</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h4>Legal</h4>
-          <ul>
-            <li><a href="#">Terms of Service</a></li>
-            <li><a href="#">Privacy Policy</a></li>
-            <li><a href="#">Cookie Policy</a></li>
-            <li><a href="#">Copyright Notice</a></li>
-          </ul>
-        </div>
-      </div> -->
-      <div class="footer-bottom">
-        <p>&copy; 2024 StudyConnect. All rights reserved.</p>
-      </div>
-    </footer>
-
     <script>
-      // Toggle sidebar visibility
-      const menuToggle = document.querySelector('.menu-toggle');
-      const sidebar = document.querySelector('.sidebar');
-      const mainContent = document.querySelector('.main-content');
+    // Add these functions at the beginning of your script tag
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.querySelector('.menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
 
-      menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
-        mainContent.classList.toggle('active');
-      });
-
-      // Handle dropdown menu visibility
-      const profileDropdown = document.querySelector('.profile-dropdown');
-      const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
-
-      profileDropdown.addEventListener('click', () => {
-        dropdownMenu.classList.toggle('active');
-      });
-
-      // Close dropdown when clicking outside
-      window.addEventListener('click', (event) => {
-        if (!profileDropdown.contains(event.target)) {
-          dropdownMenu.classList.remove('active');
-        }
-      });
-
-      // Manage active state of navigation links and show respective content
-      const navLinks = document.querySelectorAll('.nav-link');
-      const contentSections = document.querySelectorAll('.content-section');
-
-      function showContent(contentId) {
-        // Hide all content sections
-        const contentSections = document.querySelectorAll('.content-section');
-        contentSections.forEach(section => {
-          section.classList.remove('active');
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('active');
         });
 
+        // Close sidebar when clicking outside (optional)
+        document.addEventListener('click', function(event) {
+            if (!sidebar.contains(event.target) && !menuToggle.contains(event.target)) {
+                sidebar.classList.remove('active');
+                mainContent.classList.remove('active');
+            }
+        });
+    });
+
+    //  // Handle dropdown menu visibility
+    //  const profileDropdown = document.querySelector('.profile-dropdown');
+    //   const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
+
+    //   profileDropdown.addEventListener('click', () => {
+    //     dropdownMenu.classList.toggle('active');
+    //   });
+
+    function showContent(contentId) {
         // Remove active class from all nav links
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-          link.classList.remove('active');
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
         });
+        
+        // Add active class to the matching nav link
+        document.querySelector(`.nav-link[onclick*="showContent('${contentId}')"]`).classList.add('active');
+        
+        // Hide all content sections
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // Show selected content section
+        document.getElementById(contentId + '-content').classList.add('active');
+    }
 
-        // Show the selected content section
-        const selectedContent = document.getElementById(contentId);
-        if (selectedContent) {
-          selectedContent.classList.add('active');
+    // Add this to your existing CSS
+    const additionalStyles = `
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
-        // Add active class to clicked nav link
-        const clickedLink = document.querySelector(`[onclick="showContent('${contentId}')"]`);
-        if (clickedLink) {
-          clickedLink.classList.add('active');
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: 0.3s;
         }
-      }
 
-      // Handle dropdown menu visibility for ratings and coins
-      const ratingsDropdown = document.querySelector('.ratings-reviews .dropdown-menu');
-      const coinDropdown = document.querySelector('.coin-wallet .dropdown-menu');
+        .nav-link:hover {
+            background: var(--input-color);
+            color: var(--accent-color);
+        }
 
-      document.querySelector('.ratings-reviews').addEventListener('click', (event) => {
-        event.stopPropagation(); // Prevent event from bubbling up
-        ratingsDropdown.classList.toggle('active');
-      });
+        .nav-link.active {
+            background: var(--accent-color);
+            color: var(--base-color);
+        }
 
-      document.querySelector('.coin-wallet').addEventListener('click', (event) => {
-        event.stopPropagation(); // Prevent event from bubbling up
-        coinDropdown.classList.toggle('active');
-      });
+        .content-section {
+            display: none;
+        }
 
-      // Close dropdowns when clicking outside
-      window.addEventListener('click', () => {
-        ratingsDropdown.classList.remove('active');
-        coinDropdown.classList.remove('active');
-      });
-
-      // Fetch student requests using AJAX
-      function fetchStudentRequests() {
+        .content-section.active {
+            display: block;
+        }
+    `;
+    function fetchStudentRequests() {
           fetch('fetch_requests.php', {
               method: 'POST',
               headers: {
@@ -1596,36 +2394,6 @@ $tutor_query->close();
       // Call the function to fetch requests when the page loads
       document.addEventListener('DOMContentLoaded', fetchStudentRequests);
 
-      // Add event listener to search button
-      document.getElementById('search-button').addEventListener('click', function() {
-        const location = document.querySelector('.filter-select:nth-of-type(1)').value;
-        const subject = document.querySelector('.filter-select:nth-of-type(2)').value;
-        const mode = document.querySelector('.filter-select:nth-of-type(3)').value;
-        
-        fetch('fetch_requests.php', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ location, subject, mode })
-        })
-        .then(response => response.json())
-        .then(data => {
-          const requestsGrid = document.querySelector('.requests-grid');
-          requestsGrid.innerHTML = '';
-          if (data.length > 0) {
-            data.forEach(request => {
-              const requestElement = document.createElement('div');
-              requestElement.classList.add('request-item');
-              requestElement.innerHTML = `<p>${request.title}</p><p>${request.description}</p>`;
-              requestsGrid.appendChild(requestElement);
-            });
-          } else {
-            requestsGrid.innerHTML = '<p>No student requests found.</p>';
-          }
-        })
-        .catch(error => console.error('Error fetching requests:', error));
-      });
 
       // Get the popup element
       const popup = document.querySelector('.confirmation-popup');
@@ -1692,6 +2460,353 @@ $tutor_query->close();
           popup.style.display = 'none';
         }
       });
+    // Add the styles to the existing style tag
+    document.querySelector('style').textContent += additionalStyles;
+    
+    // Add this JavaScript after your existing script tag content
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all dropdown containers
+        const dropdowns = document.querySelectorAll('.ratings-reviews, .coin-wallet, .profile-dropdown');
+        
+        // Add click handlers to each dropdown
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('click', function(e) {
+                // Close all other dropdowns first
+                dropdowns.forEach(other => {
+                    if (other !== dropdown) {
+                        other.querySelector('.dropdown-menu').classList.remove('active');
+                    }
+                });
+                
+                // Toggle current dropdown
+                const menu = this.querySelector('.dropdown-menu');
+                menu.classList.toggle('active');
+                
+                // Stop event from bubbling up to document
+                e.stopPropagation();
+            });
+        });
+        
+        // Close all dropdowns when clicking outside
+        document.addEventListener('click', function() {
+            dropdowns.forEach(dropdown => {
+                dropdown.querySelector('.dropdown-menu').classList.remove('active');
+            });
+        });
+    });
+    
+    // Add this function to your existing JavaScript
+    function updateRequestStatus(requestId, status) {
+      if (confirm('Are you sure you want to ' + status + ' this request?')) {
+        fetch('update_request_status.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'request_id=' + requestId + '&status=' + status
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Reload the page to show updated status
+            location.reload();
+          } else {
+            alert('Error updating request status');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error updating request status');
+        });
+      }
+    }
+
+    // JavaScript to handle chat functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const chatContacts = document.querySelectorAll('.chat-contact');
+      const chatMessages = document.getElementById('chat-messages');
+      const chatHeader = document.getElementById('chat-header');
+      const chatInput = document.getElementById('chat-input');
+      const messageInput = document.getElementById('message-text');
+      const sendButton = document.getElementById('send-message-btn');
+      const selectedStudentInput = document.getElementById('selected-student-userid');
+      
+      // Function to fetch student details and their messages
+      async function loadStudentChat(studentId) {
+        try {
+          const response = await fetch('get_student_chat.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `student_id=${studentId}`
+          });
+          
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          
+          const data = await response.json();
+          
+          // Update chat header with student info
+          document.getElementById('selected-contact-name').textContent = data.student.username;
+          document.getElementById('selected-contact-status').textContent = 'Student';
+          
+          // Store student's userid for sending messages
+          selectedStudentInput.value = data.student.userid;
+          
+          // Display chat input
+          chatInput.style.display = 'flex';
+          
+          // Clear and populate chat messages
+          chatMessages.innerHTML = '';
+          
+          if (data.messages.length === 0) {
+            chatMessages.innerHTML = '<div class="no-messages"><p>No messages yet. Start the conversation!</p></div>';
+            return;
+          }
+          
+          // Group messages by date
+          let currentDate = '';
+          data.messages.forEach(message => {
+            // Format the date
+            const messageDate = new Date(message.sent_time);
+            const formattedDate = messageDate.toLocaleDateString();
+            
+            // Add date separator if it's a new date
+            if (formattedDate !== currentDate) {
+              currentDate = formattedDate;
+              const dateSeparator = document.createElement('div');
+              dateSeparator.className = 'message-date';
+              dateSeparator.textContent = currentDate;
+              chatMessages.appendChild(dateSeparator);
+            }
+            
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = message.sender_id == <?php echo $_SESSION['userid']; ?> ? 'message sent' : 'message received';
+            
+            const messageTime = new Date(message.sent_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+              <div class="message-content">
+                <p>${message.message_text}</p>
+                <span class="message-time">${messageTime}</span>
+              </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+          });
+          
+          // Scroll to bottom
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+          
+        } catch (error) {
+          console.error('Error:', error);
+          chatMessages.innerHTML = '<div class="error-message"><p>Failed to load chat messages</p></div>';
+        }
+      }
+      
+      // Add click event to chat contacts
+      chatContacts.forEach(contact => {
+        contact.addEventListener('click', function() {
+          // Remove active class from all contacts
+          chatContacts.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked contact
+          this.classList.add('active');
+          
+          // Get student ID from data attribute
+          const studentId = this.getAttribute('data-student-id');
+          
+          // Load chat for this student
+          loadStudentChat(studentId);
+        });
+      });
+      
+      // Send message functionality - ONLY on button click, not Enter key
+      sendButton.addEventListener('click', sendMessage);
+      
+      async function sendMessage() {
+        const messageText = messageInput.value.trim();
+        const receiverUserId = selectedStudentInput.value;
+        
+        if (!messageText || !receiverUserId) {
+          return;
+        }
+        
+        try {
+          const response = await fetch('send_message.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `message=${messageText}&receiver_id=${receiverUserId}`
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to send message');
+          }
+          
+          // Clear input field
+          messageInput.value = '';
+          
+          // Refresh messages
+          const studentId = document.querySelector('.chat-contact.active').getAttribute('data-student-id');
+          loadStudentChat(studentId);
+          
+        } catch (error) {
+          console.error('Error sending message:', error);
+          alert('Failed to send message. Please try again.');
+        }
+      }
+    });
+
+    // Auto-resize textarea
+    const messageTextarea = document.getElementById('message-text');
+    
+    messageTextarea.addEventListener('input', function() {
+      // Reset height to default
+      this.style.height = 'auto';
+      
+      // Calculate the new height (capped at 150px for max 5-6 lines)
+      const newHeight = Math.min(this.scrollHeight, 150);
+      
+      // Set the new height
+      this.style.height = newHeight + 'px';
+    });
+
+    // Add this to your existing DOMContentLoaded event handler
+    document.addEventListener('DOMContentLoaded', function() {
+      // Existing code...
+      
+      // Search contacts functionality
+      const searchInput = document.getElementById('contact-search');
+      const chatContacts = document.querySelectorAll('.chat-contact');
+      
+      if (searchInput) {
+        searchInput.addEventListener('input', function() {
+          const searchTerm = this.value.toLowerCase().trim();
+          
+          chatContacts.forEach(contact => {
+            const username = contact.getAttribute('data-username').toLowerCase();
+            if (username.includes(searchTerm)) {
+              contact.style.display = 'flex';
+            } else {
+              contact.style.display = 'none';
+            }
+          });
+        });
+      }
+      
+      // Rest of your existing code...
+    });
+
+    // Add this function to your JavaScript section
+    function startChat(username) {
+        // First switch to the messages tab
+        showContent('messages');
+        
+        // After a small delay to ensure the messages tab is loaded
+        setTimeout(() => {
+            // Find all chat contacts
+            const chatContacts = document.querySelectorAll('.chat-contact');
+            let contactFound = false;
+            
+            // Look for a contact with matching username
+            chatContacts.forEach(contact => {
+                const contactName = contact.querySelector('.contact-name');
+                if (contactName && contactName.textContent === username) {
+                    // Simulate a click on this contact
+                    contact.click();
+                    contactFound = true;
+                }
+            });
+            
+            // If no matching contact found, show a message
+            if (!contactFound) {
+                document.getElementById('chat-messages').innerHTML = `
+                    <div class="no-conversation">
+                        <p>Could not find a chat with ${username}.</p>
+                        <p>This might occur if your connection was just approved.</p>
+                        <p>Try refreshing the page to see all your current student connections.</p>
+                        <button onclick="location.reload()" style="margin-top: 15px; padding: 8px 16px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }, 100); // Small delay to ensure tab switch is complete
+    }
+
+    // Update the applyFilters function
+    function applyFilters() {
+        const subject = document.getElementById('filter-subject').value;
+        const mode = document.getElementById('filter-mode').value;
+        const rate = document.getElementById('filter-rate').value;
+        const location = document.getElementById('filter-location').value;
+
+        // Only proceed with filtering if at least one filter is set
+        if (subject || mode || rate || location) {
+            fetch('fetch_requests.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `subject=${encodeURIComponent(subject)}&mode=${encodeURIComponent(mode)}&rate=${encodeURIComponent(rate)}&location=${encodeURIComponent(location)}&tutor_id=<?php echo $tutor_id; ?>`
+            })
+            .then(response => response.json())
+            .then(data => updateRequestsGrid(data))
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error applying filters. Please try again.');
+            });
+        }
+    }
+
+    // Update the resetFilters function
+    function resetFilters() {
+        // Clear all filter inputs
+        document.getElementById('filter-subject').value = '';
+        document.getElementById('filter-mode').value = '';
+        document.getElementById('filter-rate').value = '';
+        document.getElementById('filter-location').value = '';
+        
+        // Reload the page to show all requests
+        location.reload();
+    }
+
+    // Update the updateRequestsGrid function
+    function updateRequestsGrid(data) {
+        const requestsGrid = document.querySelector('.requests-grid');
+        requestsGrid.innerHTML = ''; // Clear existing content
+
+        if (data.length > 0) {
+            data.forEach(request => {
+                const requestCard = `
+                    <div class="request-card">
+                        <h3 class="student-name">${request.username}</h3>
+                        <p class="requirements">${request.description}</p>
+                        <div class="tags">
+                            <span class="tag">📚 ${request.subject}</span>
+                            <span class="tag">💰 $${request.fee_rate}/hour</span>
+                            <span class="tag">💻 ${request.mode_of_learning}</span>
+                        </div>
+                        <div class="request-info">
+                            <strong>Location:</strong> <span>${request.location}</span>
+                            <strong>Submitted:</strong> <span>${request.created_at}</span>
+                            <strong>Start Date:</strong> <span>${request.start_date}</span>
+                            <strong>End Date:</strong> <span>${request.end_date}</span>
+                        </div>
+                        <button class="connect-btn" data-request-id="${request.request_id}" data-responses="${request.response_count}">Connect with Student</button>
+                    </div>
+                `;
+                requestsGrid.innerHTML += requestCard;
+            });
+        } else {
+            requestsGrid.innerHTML = "<p>No matching student requests found.</p>";
+        }
+    }
     </script>
   </body>
 </html>

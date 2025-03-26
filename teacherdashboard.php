@@ -39,31 +39,6 @@ $tutor = $tutor_result->fetch_assoc();
 $tutor_id = $tutor['tutor_id'];
 $tutor_query->close();
 
-// Build the WHERE clause based on filters
-$where_conditions = [];
-$params = [];
-$types = "";
-
-if (!empty($_GET['subject'])) {
-    $where_conditions[] = "tbl_request.subject = ?";
-    $params[] = $_GET['subject'];
-    $types .= "s";
-}
-
-// Construct the base query
-$query = "SELECT * FROM tbl_request";
-if (!empty($where_conditions)) {
-    $query .= " WHERE " . implode(" AND ", $where_conditions);
-}
-
-// Prepare and execute the query
-$stmt = $conn->prepare($query);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$requestresult = $stmt->get_result();
-
 ?>
 
 <!DOCTYPE html>
@@ -1530,80 +1505,6 @@ $requestresult = $stmt->get_result();
         line-height: 1.5;
         max-width: 200px;
       }
-
-      .filter-section {
-        background: var(--base-color);
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2rem;
-      }
-
-      .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        align-items: end;
-      }
-
-      .filter-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .filter-label {
-        font-size: 0.9rem;
-        color: var(--text-color);
-        font-weight: 500;
-      }
-
-      .filter-item select {
-        width: 100%;
-        padding: 0.8rem 1rem;
-        border: 2px solid var(--input-color);
-        border-radius: 8px;
-        font-size: 1rem;
-        color: var(--text-color);
-        background-color: white;
-        transition: all 0.3s ease;
-      }
-
-      .button-group {
-        display: flex;
-        gap: 1rem;
-      }
-
-      .filter-btn,
-      .reset-btn {
-        padding: 0.8rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .filter-btn {
-        background: var(--accent-color);
-        color: white;
-        border: none;
-        flex: 1;
-      }
-
-      .reset-btn {
-        background: var(--input-color);
-        color: var(--text-color);
-        border: none;
-      }
-
-      .filter-btn:hover,
-      .reset-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      }
     </style>
   </head>
   <body>
@@ -1710,145 +1611,128 @@ $requestresult = $stmt->get_result();
         <div id="student-requests-content" class="content-section">
         <div class="requests-container">
             <div class="section-header">
-                <h2>Find a Student</h2>
+              <h2>Find a Student</h2>
             </div>
             
-            <!-- Filter section -->
-            <div class="filter-section">
-                <form id="search-filters" onsubmit="return false;">
-                    <div class="filter-grid">
-                        <div class="filter-item">
-                            <label for="filter-subject" class="filter-label">Subject</label>
-                            <select name="subject" id="filter-subject">
-                                <option value="">All Subjects</option>
-                                <?php
-                                $subject_query = "SELECT * FROM tbl_subject ORDER BY subject";
-                                $subject_result = $conn->query($subject_query);
-                                
-                                while ($row = $subject_result->fetch_assoc()) {
-                                    echo '<option value="' . htmlspecialchars($row['subject']) . '">' . 
-                                         htmlspecialchars($row['subject']) . '</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        <div class="filter-item">
-                            <label for="filter-mode" class="filter-label">Mode of Learning</label>
-                            <select name="mode" id="filter-mode">
-                                <option value="">All Modes</option>
-                                <option value="online">Online</option>
-                                <option value="offline">Offline</option>
-                                <option value="both">Both</option>
-                            </select>
-                        </div>
-                        <div class="filter-item">
-                            <label for="filter-location" class="filter-label">Location</label>
-                            <select name="location" id="filter-location">
-                                <option value="">All Locations</option>
-                                <?php
-                                $location_query = "SELECT DISTINCT city, state FROM tbl_studentlocation ORDER BY city";
-                                $location_result = $conn->query($location_query);
-                                
-                                while ($row = $location_result->fetch_assoc()) {
-                                    $location = htmlspecialchars($row['city'] . ', ' . $row['state']);
-                                    echo '<option value="' . $location . '">' . $location . '</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
-                        <div class="filter-item">
-                            <label for="filter-rate" class="filter-label">Maximum Rate ($/hour)</label>
-                            <input type="number" id="filter-rate" name="rate" min="0" step="1" placeholder="Max rate">
-                        </div>
-                        <div class="filter-item">
-                            <label class="filter-label">&nbsp;</label>
-                            <div class="button-group">
-                                <button type="button" onclick="applyFilters()" class="filter-btn">
-                                    <i class="fas fa-search"></i> Search
-                                </button>
-                                <button type="button" onclick="resetFilters()" class="reset-btn">
-                                    <i class="fas fa-undo"></i> Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+            <!-- Add filters container here -->
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label class="filter-label">Subject</label>
+                    <select class="filter-select" id="subject-filter">
+                        <option value="all">All Subjects</option>
+                        <?php
+                        // Fetch subjects from tbl_subject
+                        $subject_query = "SELECT * FROM tbl_subject ORDER BY subject";
+                        $subject_result = $conn->query($subject_query);
+                        while ($subject = $subject_result->fetch_assoc()) {
+                            echo '<option value="' . htmlspecialchars($subject['subject']) . '">' 
+                                 . htmlspecialchars($subject['subject']) . '</option>';
+                        }
+                        ?>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Mode of Learning</label>
+                    <select class="filter-select" id="mode-filter">
+                        <option value="all">All Modes</option>
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                        <option value="both">Both</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Requests Grid -->
             <div class="requests-grid">
   <?php
-            // Default query to show ALL requests without any filters
-            $request_query = "SELECT r.*, 
-                            s.student_id, 
-                            u.username, 
-                            sl.city, 
-                            sl.state, 
-                            sl.country,
-                            (SELECT COUNT(*) FROM tbl_response WHERE request_id = r.request_id) as response_count
-                     FROM tbl_request r
-                     JOIN tbl_student s ON r.student_id = s.student_id
-                     JOIN users u ON s.userid = u.userid
-                     JOIN tbl_studentlocation sl ON s.student_id = sl.student_id
-                     WHERE r.status = 'open'
-                     ORDER BY r.created_at DESC";
-            
-            $result = $conn->query($request_query);
 
-            if ($result->num_rows > 0) {
-                while ($request = $result->fetch_assoc()) {
-                    ?>
-                    <div class="request-card">
-                        <h3 class="student-name"><?php echo htmlspecialchars($request['username']); ?></h3>
-                        <p class="requirements"><?php echo htmlspecialchars($request['description']); ?></p>
-                        <div class="tags">
-                            <span class="tag">📚 <?php echo htmlspecialchars($request['subject']); ?></span>
-                            <span class="tag">💰 $<?php echo htmlspecialchars($request['fee_rate']); ?>/hour</span>
-                            <span class="tag">💻 <?php echo htmlspecialchars($request['mode_of_learning']); ?></span>
-                        </div>
-                        <div class="request-info">
-                            <strong>Location:</strong> <span><?php echo htmlspecialchars($request['city'] . ', ' . $request['state'] . ', ' . $request['country']); ?></span>
-                            <strong>Submitted:</strong> <span><?php echo htmlspecialchars($request['created_at']); ?></span>
-                            <strong>Start Date:</strong> <span><?php echo htmlspecialchars($request['start_date']); ?></span>
-                            <strong>End Date:</strong> <span><?php echo htmlspecialchars($request['end_date']); ?></span>
-                        </div>
-                        <button class="connect-btn" data-request-id="<?php echo $request['request_id']; ?>" 
-                                data-responses="<?php echo $request['response_count']; ?>">
-                            Connect with Student
-                        </button>
-                    </div>
-                    <?php
-                }
-            } else {
-                echo "<p>No student requests found.</p>";
-            }
-            ?>
-            </div>
-        </div>
+  
 
-        <!-- Updated confirmation popup -->
-        <div class="confirmation-popup" style="display: none;">
-            <div class="popup-content">
-                <p>Are you sure you want to connect with this student?</p>
-                <p class="response-count" style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
-                    <span id="applicant-count">0</span> tutors have applied for this request
-                </p>
-                <!-- Add textarea for custom message -->
-                <div style="margin-top: 1rem;">
-                    <label for="connect-message" style="display: block; margin-bottom: 0.5rem;">Message to student:</label>
-                    <textarea 
-                        id="connect-message" 
-                        rows="4" 
-                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--input-color); border-radius: 4px; margin-bottom: 1rem;"
-                        placeholder="Enter your message to the student..."
-                    >I am interested in helping you with your studies.</textarea>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <button class="confirm-connect">Yes</button>
-                    <button class="cancel-connect">No</button>
-                </div>
-            </div>
+  $requestresult = $conn->query("SELECT * FROM tbl_request");
+
+  // Check if there are any requests
+  if ($requestresult->num_rows > 0) {
+      while ($request = $requestresult->fetch_assoc()) {
+          $studentid = $request['student_id'];
+          $studentresult = $conn->query("SELECT * FROM tbl_student WHERE student_id=$studentid");
+          $student = $studentresult->fetch_assoc();
+          $userid = $student['userid'];
+          $userresult = $conn->query("SELECT * FROM users WHERE userid=$userid");
+          $user = $userresult->fetch_assoc(); 
+          $locationresult = $conn->query("SELECT * FROM tbl_studentlocation WHERE student_id=$studentid");
+          $location = $locationresult->fetch_assoc();
+
+          // Get the count of responses for this request
+          $request_id = $request['request_id'];
+          $response_count_query = $conn->prepare("SELECT COUNT(*) as response_count FROM tbl_response WHERE request_id = ?");
+          $response_count_query->bind_param("i", $request_id);
+          $response_count_query->execute();
+          $response_count_result = $response_count_query->get_result();
+          $response_count = $response_count_result->fetch_assoc()['response_count'];
+          $response_count_query->close();
+
+          // Check if tutor has already applied for this request
+          $check_response = $conn->prepare("SELECT response_id FROM tbl_response WHERE request_id = ? AND tutor_id = ?");
+          $check_response->bind_param("ii", $request['request_id'], $tutor_id);
+          $check_response->execute();
+          $response_result = $check_response->get_result();
+          $has_applied = $response_result->num_rows > 0;
+          $check_response->close();
+
+          echo '<div class="request-card' . ($has_applied ? ' applied' : '') . '">';
+          echo '<h3 class="student-name">' . htmlspecialchars($user['username']) . '</h3>';
+          echo '<p class="requirements">' . htmlspecialchars($request['description']) . '</p>';
+          echo '<div class="tags">';
+          echo '<span class="tag">📚 ' . htmlspecialchars($request['subject']) . '</span>';
+          echo '<span class="tag">💰 $' . htmlspecialchars($request['fee_rate']) . '/hour</span>';
+          echo '<span class="tag">💻 ' . htmlspecialchars($request['mode_of_learning']) . '</span>';
+          echo '</div>';
+          echo '<div class="request-info">';
+          echo '<strong>Location:</strong> <span>' . htmlspecialchars($location['city'] . ', ' . $location['state'] . ', ' . $location['country']) . '</span>';
+          echo '<strong>Submitted:</strong> <span>' . htmlspecialchars($request['created_at']) . '</span>';
+          echo '<strong>Start Date:</strong> <span>' . htmlspecialchars($request['start_date']) . '</span>';
+          echo '<strong>End Date:</strong> <span>' . htmlspecialchars($request['end_date']) . '</span>';
+          echo '</div>';
+
+          if ($has_applied) {
+              echo '<div class="applied-badge">Applied</div>';
+          } else {
+              echo '<button class="connect-btn" data-request-id="' . $request['request_id'] . '" data-responses="' . $response_count . '">Connect with Student</button>';
+          }
+
+          echo '</div>';
+      }
+  } else {
+      // No requests found
+      echo "<p>No student requests found.</p>";
+  }
+
+?>
+</div>
+
+<!-- Updated confirmation popup -->
+<div class="confirmation-popup" style="display: none;">
+    <div class="popup-content">
+        <p>Are you sure you want to connect with this student?</p>
+        <p class="response-count" style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
+            <span id="applicant-count">0</span> tutors have applied for this request
+        </p>
+        <!-- Add textarea for custom message -->
+        <div style="margin-top: 1rem;">
+            <label for="connect-message" style="display: block; margin-bottom: 0.5rem;">Message to student:</label>
+            <textarea 
+                id="connect-message" 
+                rows="4" 
+                style="width: 100%; padding: 0.5rem; border: 1px solid var(--input-color); border-radius: 4px; margin-bottom: 1rem;"
+                placeholder="Enter your message to the student..."
+            >I am interested in helping you with your studies.</textarea>
         </div>
+        <div style="margin-top: 1rem;">
+            <button class="confirm-connect">Yes</button>
+            <button class="cancel-connect">No</button>
+        </div>
+    </div>
+</div>
 
         </div>
         </div>
@@ -2739,74 +2623,76 @@ $requestresult = $stmt->get_result();
         }, 100); // Small delay to ensure tab switch is complete
     }
 
-    // Update the applyFilters function
-    function applyFilters() {
-        const subject = document.getElementById('filter-subject').value;
-        const mode = document.getElementById('filter-mode').value;
-        const rate = document.getElementById('filter-rate').value;
-        const location = document.getElementById('filter-location').value;
-
-        // Only proceed with filtering if at least one filter is set
-        if (subject || mode || rate || location) {
+    // Add filter functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const subjectFilter = document.getElementById('subject-filter');
+        const modeFilter = document.getElementById('mode-filter');
+        
+        // Function to apply filters
+        function applyFilters() {
+            const subject = subjectFilter.value;
+            const mode = modeFilter.value;
+            
+            // Create FormData object
+            const formData = new FormData();
+            formData.append('tutor_id', <?php echo $tutor_id; ?>);
+            formData.append('subject', subject);
+            formData.append('mode', mode);
+            
+            // Fetch filtered requests
             fetch('fetch_requests.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `subject=${encodeURIComponent(subject)}&mode=${encodeURIComponent(mode)}&rate=${encodeURIComponent(rate)}&location=${encodeURIComponent(location)}&tutor_id=<?php echo $tutor_id; ?>`
+                body: formData
             })
             .then(response => response.json())
-            .then(data => updateRequestsGrid(data))
+            .then(data => {
+                const requestsGrid = document.querySelector('.requests-grid');
+                requestsGrid.innerHTML = ''; // Clear existing content
+                
+                if (data.length > 0) {
+                    data.forEach(request => {
+                        const cardClass = request.has_applied ? 'request-card applied' : 'request-card';
+                        const requestCard = `
+                            <div class="${cardClass}">
+                                <h3 class="student-name">${request.username}</h3>
+                                <p class="requirements">${request.description}</p>
+                                <div class="tags">
+                                    <span class="tag">📚 ${request.subject}</span>
+                                    <span class="tag">💰 $${request.fee_rate}/hour</span>
+                                    <span class="tag">💻 ${request.mode_of_learning}</span>
+                                </div>
+                                <div class="request-info">
+                                    <strong>Location:</strong> <span>${request.location}</span>
+                                    <strong>Submitted:</strong> <span>${request.created_at}</span>
+                                    <strong>Start Date:</strong> <span>${request.start_date}</span>
+                                    <strong>End Date:</strong> <span>${request.end_date}</span>
+                                </div>
+                                ${request.has_applied ? 
+                                    '<div class="applied-badge">Applied</div>' : 
+                                    `<button class="connect-btn" data-request-id="${request.request_id}" data-responses="${request.response_count}">Connect with Student</button>`
+                                }
+                            </div>
+                        `;
+                        requestsGrid.innerHTML += requestCard;
+                    });
+                } else {
+                    requestsGrid.innerHTML = "<p>No student requests found matching the selected filters.</p>";
+                }
+            })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error applying filters. Please try again.');
+                const requestsGrid = document.querySelector('.requests-grid');
+                requestsGrid.innerHTML = "<p>Error loading requests. Please try again later.</p>";
             });
         }
-    }
-
-    // Update the resetFilters function
-    function resetFilters() {
-        // Clear all filter inputs
-        document.getElementById('filter-subject').value = '';
-        document.getElementById('filter-mode').value = '';
-        document.getElementById('filter-rate').value = '';
-        document.getElementById('filter-location').value = '';
         
-        // Reload the page to show all requests
-        location.reload();
-    }
-
-    // Update the updateRequestsGrid function
-    function updateRequestsGrid(data) {
-        const requestsGrid = document.querySelector('.requests-grid');
-        requestsGrid.innerHTML = ''; // Clear existing content
-
-        if (data.length > 0) {
-            data.forEach(request => {
-                const requestCard = `
-                    <div class="request-card">
-                        <h3 class="student-name">${request.username}</h3>
-                        <p class="requirements">${request.description}</p>
-                        <div class="tags">
-                            <span class="tag">📚 ${request.subject}</span>
-                            <span class="tag">💰 $${request.fee_rate}/hour</span>
-                            <span class="tag">💻 ${request.mode_of_learning}</span>
-                        </div>
-                        <div class="request-info">
-                            <strong>Location:</strong> <span>${request.location}</span>
-                            <strong>Submitted:</strong> <span>${request.created_at}</span>
-                            <strong>Start Date:</strong> <span>${request.start_date}</span>
-                            <strong>End Date:</strong> <span>${request.end_date}</span>
-                        </div>
-                        <button class="connect-btn" data-request-id="${request.request_id}" data-responses="${request.response_count}">Connect with Student</button>
-                    </div>
-                `;
-                requestsGrid.innerHTML += requestCard;
-            });
-        } else {
-            requestsGrid.innerHTML = "<p>No matching student requests found.</p>";
-        }
-    }
+        // Add event listeners to filters
+        subjectFilter.addEventListener('change', applyFilters);
+        modeFilter.addEventListener('change', applyFilters);
+        
+        // Initial load with default filters
+        applyFilters();
+    });
     </script>
   </body>
 </html>

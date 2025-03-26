@@ -10,18 +10,23 @@ try {
     $params = [];
     $types = "";
 
+    // Add tutor_id as first parameter (for checking if tutor has applied)
     if (!empty($_POST['tutor_id'])) {
         array_unshift($params, $_POST['tutor_id']);
         $types .= "i";
+    } else {
+        throw new Exception('Tutor ID is required');
     }
 
-    if (!empty($_POST['subject'])) {
+    // Add subject filter
+    if (!empty($_POST['subject']) && $_POST['subject'] !== 'all') {
         $where_conditions[] = "r.subject = ?";
         $params[] = $_POST['subject'];
         $types .= "s";
     }
 
-    if (!empty($_POST['mode'])) {
+    // Add mode filter
+    if (!empty($_POST['mode']) && $_POST['mode'] !== 'all') {
         $where_conditions[] = "r.mode_of_learning = ?";
         $params[] = $_POST['mode'];
         $types .= "s";
@@ -43,7 +48,7 @@ try {
         }
     }
 
-    // Construct the base query with JOIN to include location information
+    // Construct the query
     $query = "SELECT r.*, s.student_id, u.username, sl.city, sl.state, sl.country,
               (SELECT COUNT(*) FROM tbl_response WHERE request_id = r.request_id) as response_count,
               (SELECT COUNT(*) FROM tbl_response WHERE request_id = r.request_id AND tutor_id = ?) as has_applied
@@ -79,6 +84,8 @@ try {
     echo json_encode(['error' => $e->getMessage()]);
 }
 
-$stmt->close();
+if (isset($stmt)) {
+    $stmt->close();
+}
 $conn->close();
 ?> 
