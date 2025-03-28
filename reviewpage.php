@@ -801,7 +801,7 @@ $success_message = isset($_GET['success']) ? $_GET['success'] : '';
                     <div class="subject-section">
                         <h3>Which subject was taught?</h3>
                         <select name="subject_id" class="subject-select">
-                            <option value="">General Review (All Subjects)</option>
+                          
                             <?php 
                             // Reset the result pointer to the beginning
                             $subjects_result->data_seek(0);

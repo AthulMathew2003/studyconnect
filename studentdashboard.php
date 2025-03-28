@@ -199,10 +199,37 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
                 <!-- Add this modal form HTML -->
                 <div id="requestModal" class="modal">
-                    <div class="modal-content">
+                    <div class="modal-content" style="margin: 20px auto; max-height: 90vh; overflow-y: auto;">
                         <span class="close-modal" onclick="closeRequestModal()">&times;</span>
                         <h2>New Teacher Request</h2>
-                        <form id="newRequestForm" onsubmit="submitRequest(event)">
+                        
+                        <?php
+                        // Get user's coin balance from the wallet
+                        $userid = $_SESSION['userid']; // Assuming you have user's ID in session
+                        $walletQuery = "SELECT coin_balance FROM tbl_coinwallet WHERE userid = $userid";
+                        $walletResult = $conn->query($walletQuery);
+                        
+                        $coinBalance = 0;
+                        if ($walletResult && $walletResult->num_rows > 0) {
+                            $walletData = $walletResult->fetch_assoc();
+                            $coinBalance = $walletData['coin_balance'];
+                        }
+                        
+                        // Display coin balance and required coins message
+                        echo '<div class="coin-balance-info" style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">';
+                        echo '<p><strong>Your Coin Balance:</strong> ' . $coinBalance . ' coins</p>';
+                        echo '<p><strong>Note:</strong> Posting a new request requires 70 coins.</p>';
+                        
+                        if ($coinBalance < 70) {
+                            echo '<p style="color: #dc3545;"><i>You don\'t have enough coins to post a request. Please add more coins to your wallet.</i></p>';
+                        }
+                        
+                        echo '</div>';
+                        
+                        $hasEnoughCoins = ($coinBalance >= 70);
+                        ?>
+                        
+                        <form id="newRequestForm" onsubmit="<?php echo $hasEnoughCoins ? 'submitRequest(event)' : 'redirectToBuyCoins(event)'; ?>">
                             <div class="form-group">
                                 <label for="subject">Subject:</label>
                                 <select id="subject" name="subject" required>
@@ -255,7 +282,11 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 
                             <div class="form-actions" style="display: flex; justify-content: space-between;">
                                 <button type="button" onclick="closeRequestModal()" class="cancel-btn">Cancel</button>
-                                <button type="submit" class="submit-btn">Submit Request</button>
+                                <?php if ($hasEnoughCoins): ?>
+                                    <button type="submit" class="submit-btn">Submit Request</button>
+                                <?php else: ?>
+                                    <button type="button" onclick="window.location.href='buy_coins.php'" class="buy-coins-btn" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Buy Coins</button>
+                                <?php endif; ?>
                             </div>
                         </form>
                     </div>
@@ -1952,6 +1983,12 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                 }
             });
         });
+
+        // Add this function to redirect to buy_coins.php
+        function redirectToBuyCoins(event) {
+            event.preventDefault();
+            window.location.href = 'buy_coins.php';
+        }
     </script>
 
     <!-- Add this before closing body tag -->
@@ -1959,22 +1996,25 @@ $_SESSION['back_view'] = 'studentdashboard.php';
     .modal {
         display: none;
         position: fixed;
-        z-index: 1000;
-        left: 0;
         top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
     }
 
     .modal-content {
         background-color: #fff;
-        margin: 5% auto;
-        padding: 20px;
-        border-radius: 8px;
-        width: 90%;
-        max-width: 500px;
         position: relative;
+        margin: 20px auto;
+        padding: 20px;
+        width: 80%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     .close-modal {
