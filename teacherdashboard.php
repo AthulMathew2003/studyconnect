@@ -1505,6 +1505,124 @@ $tutor_query->close();
         line-height: 1.5;
         max-width: 200px;
       }
+
+      .welcome-section {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+      }
+
+      .welcome-section h1 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+      }
+
+      .welcome-section p {
+        margin: 10px 0 0;
+        color: #666;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .activity-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+      }
+
+      .dashboard-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .request-item, .review-item {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .request-item:last-child, .review-item:last-child {
+        border-bottom: none;
+      }
+
+      .request-status {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+      }
+
+      .request-status.created {
+        background: #e3f2fd;
+        color: #1976d2;
+      }
+
+      .request-status.approved {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      .request-status.rejected {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .rating {
+        color: #ffc107;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 10px 0;
+      }
+
+      .stat-trend {
+        font-size: 14px;
+        color: #666;
+      }
+
+      .stat-trend.positive {
+        color: #2ecc71;
+      }
+
+      .stat-trend.negative {
+        color: #e74c3c;
+      }
+
+      .stat-trend.neutral {
+        color: #7f8c8d;
+      }
     </style>
   </head>
   <body>
@@ -1578,14 +1696,49 @@ $tutor_query->close();
         </header>
       
         <div id="dashboard-content" class="content-section active">
+          <!-- Welcome Section -->
+          <div class="welcome-section">
+            <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
+            <p>Here's your teaching overview for today</p>
+          </div>
+
+          <!-- Stats Grid -->
           <div class="dashboard-grid">
+            <?php
+            // Get tutor stats
+            $userid = $_SESSION['userid'];
+            $tutor_query = "SELECT t.tutor_id, t.hourly_rate 
+                           FROM tbl_tutors t 
+                           WHERE t.userid = $userid";
+            $tutor_result = $conn->query($tutor_query);
+            $tutor_data = $tutor_result->fetch_assoc();
+            $tutor_id = $tutor_data['tutor_id'];
+
+            // Get active students count
+            $students_query = "SELECT COUNT(*) as student_count 
+                             FROM tbl_tutorrequest 
+                             WHERE tutor_id = $tutor_id 
+                             AND status = 'approved'";
+            $students_result = $conn->query($students_query);
+            $active_students = $students_result->fetch_assoc()['student_count'];
+
+            // Get average rating
+            $rating_query = "SELECT AVG(rating) as avg_rating, COUNT(*) as review_count 
+                           FROM tbl_review 
+                           WHERE tutor_id = $tutor_id";
+            $rating_result = $conn->query($rating_query);
+            $rating_data = $rating_result->fetch_assoc();
+            $avg_rating = number_format($rating_data['avg_rating'], 1);
+            $review_count = $rating_data['review_count'];
+            ?>
+
             <div class="stat-card">
               <div class="stat-header">
                 <h3>Active Students</h3>
                 <span>📚</span>
               </div>
-              <div class="stat-value">24</div>
-              <div class="stat-trend positive">↑ 12% from last month</div>
+              <div class="stat-value"><?php echo $active_students; ?></div>
+              <div class="stat-trend">Currently Teaching</div>
             </div>
 
             <div class="stat-card">
@@ -1594,7 +1747,7 @@ $tutor_query->close();
                 <span>💰</span>
               </div>
               <div class="stat-value"><?php echo $coin_balance; ?> coins</div>
-              <div class="stat-trend positive">↑ 8% from last month</div>
+              <div class="stat-trend">Available Balance</div>
             </div>
 
             <div class="stat-card">
@@ -1602,8 +1755,73 @@ $tutor_query->close();
                 <h3>Rating</h3>
                 <span>⭐</span>
               </div>
-              <div class="stat-value">4.8</div>
-              <div class="stat-trend neutral">120 reviews</div>
+              <div class="stat-value"><?php echo $avg_rating; ?></div>
+              <div class="stat-trend"><?php echo $review_count; ?> reviews</div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="activity-section">
+            <div class="activity-grid">
+              <!-- Recent Requests -->
+              <div class="dashboard-card">
+                <h3>Recent Student Requests</h3>
+                <div class="recent-requests">
+                  <?php
+                  $requests_query = "SELECT tr.*, u.username 
+                                   FROM tbl_tutorrequest tr 
+                                   JOIN tbl_student s ON tr.student_id = s.student_id 
+                                   JOIN users u ON s.userid = u.userid 
+                                   WHERE tr.tutor_id = $tutor_id 
+                                   ORDER BY tr.created_at DESC LIMIT 5";
+                  $requests_result = $conn->query($requests_query);
+
+                  if ($requests_result->num_rows > 0) {
+                    while ($request = $requests_result->fetch_assoc()) {
+                      echo '<div class="request-item">';
+                      echo '<div class="request-info">';
+                      echo '<h4>' . htmlspecialchars($request['username']) . '</h4>';
+                      echo '<p>' . htmlspecialchars($request['description']) . '</p>';
+                      echo '</div>';
+                      echo '<span class="request-status ' . $request['status'] . '">' . ucfirst($request['status']) . '</span>';
+                      echo '</div>';
+                    }
+                  } else {
+                    echo '<p>No recent requests</p>';
+                  }
+                  ?>
+                </div>
+              </div>
+
+              <!-- Recent Reviews -->
+              <div class="dashboard-card">
+                <h3>Recent Reviews</h3>
+                <div class="recent-reviews">
+                  <?php
+                  $reviews_query = "SELECT r.*, u.username 
+                                  FROM tbl_review r 
+                                  JOIN tbl_student s ON r.student_id = s.student_id 
+                                  JOIN users u ON s.userid = u.userid 
+                                  WHERE r.tutor_id = $tutor_id 
+                                  ORDER BY r.created_at DESC LIMIT 5";
+                  $reviews_result = $conn->query($reviews_query);
+
+                  if ($reviews_result->num_rows > 0) {
+                    while ($review = $reviews_result->fetch_assoc()) {
+                      echo '<div class="review-item">';
+                      echo '<div class="review-header">';
+                      echo '<h4>' . htmlspecialchars($review['username']) . '</h4>';
+                      echo '<div class="rating">' . str_repeat('⭐', $review['rating']) . '</div>';
+                      echo '</div>';
+                      echo '<p>' . htmlspecialchars($review['comment']) . '</p>';
+                      echo '</div>';
+                    }
+                  } else {
+                    echo '<p>No reviews yet</p>';
+                  }
+                  ?>
+                </div>
+              </div>
             </div>
           </div>
         </div>

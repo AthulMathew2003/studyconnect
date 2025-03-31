@@ -100,85 +100,119 @@ $_SESSION['back_view'] = 'studentdashboard.php';
             <div class="dashboard-view" id="overview">
                 <div class="welcome-section">
                     <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h1>
-                    <p>Here's what's happening in your courses today</p>
+                    
+                    <?php
+                    // Get user's coin balance
+                    $userid = $_SESSION['userid'];
+                    $walletQuery = "SELECT coin_balance FROM tbl_coinwallet WHERE userid = $userid";
+                    $walletResult = $conn->query($walletQuery);
+                    
+                    $coinBalance = 0;
+                    if ($walletResult && $walletResult->num_rows > 0) {
+                        $walletData = $walletResult->fetch_assoc();
+                        $coinBalance = $walletData['coin_balance'];
+                    }
+                    ?>
+                    
+                    <div class="user-stats">
+                        <div class="stat-card">
+                            <i class="fas fa-coins"></i>
+                            <div class="stat-info">
+                                <h3>Coin Balance</h3>
+                                <p><?php echo $coinBalance; ?> coins</p>
+                            </div>
+                        </div>
+                        
+                        <?php
+                        // Get active requests count
+                        $requestQuery = "SELECT COUNT(*) as request_count FROM tbl_request 
+                                       WHERE student_id = (SELECT student_id FROM tbl_student WHERE userid = $userid)
+                                       AND status = 'open'";
+                        $requestResult = $conn->query($requestQuery);
+                        $activeRequests = $requestResult->fetch_assoc()['request_count'];
+                        ?>
+                        <div class="stat-card">
+                            <i class="fas fa-paper-plane"></i>
+                            <div class="stat-info">
+                                <h3>Active Requests</h3>
+                                <p><?php echo $activeRequests; ?> requests</p>
+                            </div>
+                        </div>
+                        
+                        <?php
+                        // Get connected tutors count
+                        $tutorQuery = "SELECT COUNT(*) as tutor_count FROM tbl_tutorrequest 
+                                     WHERE student_id = (SELECT student_id FROM tbl_student WHERE userid = $userid)
+                                     AND status = 'approved'";
+                        $tutorResult = $conn->query($tutorQuery);
+                        $connectedTutors = $tutorResult->fetch_assoc()['tutor_count'];
+                        ?>
+                        <div class="stat-card">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <div class="stat-info">
+                                <h3>Connected Tutors</h3>
+                                <p><?php echo $connectedTutors; ?> tutors</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="dashboard-grid">
-                    <!-- Progress Overview -->
-                    <div class="dashboard-card progress-card">
-                        <h3>Learning Progress</h3>
-                        <canvas id="progressChart"></canvas>
-                    </div>
-
-                    <!-- Upcoming Assignments -->
-                    <div class="dashboard-card assignments-card">
-                        <h3>Upcoming Assignments</h3>
-                        <div class="assignment-list">
-                            <div class="assignment-item">
-                                <div class="assignment-info">
-                                    <h4>Web Development Basics</h4>
-                                    <p>Due: Feb 20, 2025</p>
-                                </div>
-                                <span class="assignment-status pending">Pending</span>
-                            </div>
-                            <div class="assignment-item">
-                                <div class="assignment-info">
-                                    <h4>Database Design Project</h4>
-                                    <p>Due: Feb 22, 2025</p>
-                                </div>
-                                <span class="assignment-status pending">Pending</span>
-                            </div>
-                            <div class="assignment-item">
-                                <div class="assignment-info">
-                                    <h4>UI/UX Research Paper</h4>
-                                    <p>Due: Feb 25, 2025</p>
-                                </div>
-                                <span class="assignment-status pending">Pending</span>
-                            </div>
+                    <!-- Recent Requests -->
+                    <div class="dashboard-card">
+                        <h3>Recent Requests</h3>
+                        <div class="recent-requests">
+                            <?php
+                            $recentRequestsQuery = "SELECT r.*, DATE(r.created_at) as request_date 
+                                                  FROM tbl_request r 
+                                                  WHERE r.student_id = (SELECT student_id FROM tbl_student WHERE userid = $userid)
+                                                  ORDER BY r.created_at DESC LIMIT 5";
+                            $recentRequestsResult = $conn->query($recentRequestsQuery);
+                            
+                            if ($recentRequestsResult->num_rows > 0) {
+                                while ($request = $recentRequestsResult->fetch_assoc()) {
+                                    echo '<div class="request-item">';
+                                    echo '<div class="request-info">';
+                                    echo '<h4>' . htmlspecialchars($request['subject']) . '</h4>';
+                                    echo '<p>Posted: ' . $request['request_date'] . '</p>';
+                                    echo '</div>';
+                                    echo '<span class="request-status ' . $request['status'] . '">' . ucfirst($request['status']) . '</span>';
+                                    echo '</div>';
+                                }
+                            } else {
+                                echo '<p>No recent requests found.</p>';
+                            }
+                            ?>
                         </div>
                     </div>
 
-                    <!-- Recent Activity -->
-                    <div class="dashboard-card activity-card">
-                        <h3>Recent Activity</h3>
-                        <div class="activity-list">
-                            <div class="activity-item">
-                                <i class="fas fa-book-reader activity-icon"></i>
-                                <div class="activity-details">
-                                    <p>Completed Chapter 5 in Web Development</p>
-                                    <span>2 hours ago</span>
-                                </div>
-                            </div>
-                            <div class="activity-item">
-                                <i class="fas fa-comment activity-icon"></i>
-                                <div class="activity-details">
-                                    <p>Posted in Discussion Forum</p>
-                                    <span>Yesterday</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Course Recommendations -->
-                    <div class="dashboard-card recommendations-card">
-                        <h3>Recommended for You</h3>
-                        <div class="course-recommendations">
-                            <div class="recommended-course">
-                                <img src="assets/course1.jpg" alt="Course">
-                                <div class="course-info">
-                                    <h4>Advanced Web Development</h4>
-                                    <p>Master modern web technologies and frameworks</p>
-                                    <button class="enroll-btn">Enroll Now</button>
-                                </div>
-                            </div>
-                            <div class="recommended-course">
-                                <img src="assets/course2.jpg" alt="Course">
-                                <div class="course-info">
-                                    <h4>Mobile App Development</h4>
-                                    <p>Learn to build cross-platform mobile applications</p>
-                                    <button class="enroll-btn">Enroll Now</button>
-                                </div>
-                            </div>
+                    <!-- Connected Tutors -->
+                    <div class="dashboard-card">
+                        <h3>Your Tutors</h3>
+                        <div class="connected-tutors">
+                            <?php
+                            $tutorsQuery = "SELECT u.username, tr.created_at, t.teaching_mode
+                                          FROM tbl_tutorrequest tr
+                                          JOIN tbl_tutors t ON tr.tutor_id = t.tutor_id
+                                          JOIN users u ON t.userid = u.userid
+                                          WHERE tr.student_id = (SELECT student_id FROM tbl_student WHERE userid = $userid)
+                                          AND tr.status = 'approved'
+                                          ORDER BY tr.created_at DESC LIMIT 5";
+                            $tutorsResult = $conn->query($tutorsQuery);
+                            
+                            if ($tutorsResult->num_rows > 0) {
+                                while ($tutor = $tutorsResult->fetch_assoc()) {
+                                    echo '<div class="tutor-item">';
+                                    echo '<div class="tutor-info">';
+                                    echo '<h4>' . htmlspecialchars($tutor['username']) . '</h4>';
+                                    echo '<p>Mode: ' . htmlspecialchars($tutor['teaching_mode']) . '</p>';
+                                    echo '</div>';
+                                    echo '</div>';
+                                }
+                            } else {
+                                echo '<p>No connected tutors yet.</p>';
+                            }
+                            ?>
                         </div>
                     </div>
                 </div>
@@ -4262,6 +4296,87 @@ $_SESSION['back_view'] = 'studentdashboard.php';
     .buy-coins-btn:hover {
         background-color: #218838 !important;
         transition: background-color 0.2s;
+    }
+
+    .user-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .stat-card i {
+        font-size: 2em;
+        color: #007bff;
+    }
+
+    .stat-info h3 {
+        margin: 0;
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    .stat-info p {
+        margin: 5px 0 0;
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .dashboard-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .request-item, .tutor-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .request-status {
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+    }
+
+    .request-status.open {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .request-status.closed {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .welcome-section {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
     }
     </style>
 </body>
