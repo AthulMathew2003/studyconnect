@@ -1278,6 +1278,32 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Connect with Tutor</h2>
+            
+            <?php
+            // Get user's coin balance
+            $userid = $_SESSION['userid'];
+            $walletQuery = "SELECT coin_balance FROM tbl_coinwallet WHERE userid = $userid";
+            $walletResult = $conn->query($walletQuery);
+            
+            $coinBalance = 0;
+            if ($walletResult && $walletResult->num_rows > 0) {
+                $walletData = $walletResult->fetch_assoc();
+                $coinBalance = $walletData['coin_balance'];
+            }
+            
+            // Display coin balance and required coins message
+            echo '<div class="coin-balance-info" style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">';
+            echo '<p><strong>Your Coin Balance:</strong> ' . $coinBalance . ' coins</p>';
+            echo '<p><strong>Note:</strong> Connecting with a tutor requires 50 coins.</p>';
+            
+            if ($coinBalance < 50) {
+                echo '<p style="color: #dc3545;"><i>You don\'t have enough coins to connect. Please add more coins to your wallet.</i></p>';
+            }
+            echo '</div>';
+            
+            $hasEnoughCoins = ($coinBalance >= 50);
+            ?>
+
             <form id="connectForm">
                 <input type="hidden" id="tutorId" name="tutorId">
                 <div class="form-group">
@@ -1286,7 +1312,16 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                         <option value="">Select a subject</option>
                     </select>
                 </div>
-                <button type="submit" class="connect-submit-btn">Send Request</button>
+                
+                <?php if ($hasEnoughCoins): ?>
+                    <button type="submit" class="connect-submit-btn">Send Request</button>
+                <?php else: ?>
+                    <button type="button" onclick="window.location.href='buy_coins.php'" 
+                            class="buy-coins-btn" 
+                            style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
+                        Buy Coins
+                    </button>
+                <?php endif; ?>
             </form>
         </div>
     </div>
@@ -1673,42 +1708,40 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         });
         
         // Handle form submission
-        document.getElementById('connectForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+        document.getElementById('connectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            const tutorId = document.getElementById('tutorId').value;
-            const subject = document.getElementById('subjectSelect').value;
-            
-            if (!subject) {
-                alert('Please select a subject');
+            const coinBalance = <?php echo $coinBalance; ?>;
+            if (coinBalance < 50) {
+                alert('Insufficient coins. Please add more coins to your wallet.');
+                window.location.href = 'buy_coins.php';
                 return;
             }
+
+            const formData = new FormData(this);
             
-            // Send connection request
-            fetch(`connect_teacher.php?tutor_id=${tutorId}&subject=${encodeURIComponent(subject)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Connection request sent successfully!');
-                        document.getElementById('connectModal').style.display = 'none';
-                        
-                        // Update the connect button to show "Sent" 
-                        const connectButton = document.querySelector(`button.connect-btn[onclick="connectWithTeacher(${tutorId})"]`);
-                        if (connectButton) {
-                            // Replace the button with a "Sent" button
-                            connectButton.innerHTML = '<i class="fas fa-check"></i> Request Sent';
-                            connectButton.classList.add('already-requested');
-                            connectButton.disabled = true;
-                            connectButton.removeAttribute('onclick');
-                        }
-                    } else {
-                        alert('Error: ' + data.message);
+            fetch('process_connect_request.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('connectModal').style.display = 'none';
+                    // Refresh the page to show updated coin balance and request status
+                    location.reload();
+                } else {
+                    alert(data.message);
+                    if (data.message.includes('Insufficient coins')) {
+                        window.location.href = 'buy_coins.php';
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while sending the request');
-                });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request');
+            });
         });
 
         // Add filter functionality
@@ -4212,6 +4245,23 @@ $_SESSION['back_view'] = 'studentdashboard.php';
     .view-reviews-btn:hover {
         background-color: #7561ff;
         transform: translateY(-2px);
+    }
+
+    .coin-balance-info {
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        border-left: 4px solid #007bff;
+    }
+
+    .coin-balance-info p {
+        margin: 5px 0;
+    }
+
+    .buy-coins-btn:hover {
+        background-color: #218838 !important;
+        transition: background-color 0.2s;
     }
     </style>
 </body>
