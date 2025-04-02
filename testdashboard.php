@@ -1656,7 +1656,7 @@ $requestresult = $stmt->get_result();
                 <div class="coin-balance">
                   Balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?> coins</span>
                 </div>
-                <a href="#">Buy Coins</a>
+                <a href="buy_coins.php">Buy Coins</a>
                 <a href="#">Previous Transactions</a>
                 <a href="#">Coin History</a>
               </div>

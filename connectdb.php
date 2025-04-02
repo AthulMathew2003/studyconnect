@@ -179,4 +179,34 @@ $sql = "CREATE TABLE IF NOT EXISTS tbl_review (
     FOREIGN KEY (subject_id) REFERENCES tbl_subject(subject_id) ON DELETE SET NULL
 )";
 $conn->query($sql);
+
+// Drop the existing notification table if it's causing problems
+// $conn->query("DROP TABLE IF EXISTS tbl_notifications");
+
+// Create notifications table with the correct structure
+$sql = "CREATE TABLE IF NOT EXISTS tbl_notifications (
+    notification_id INT PRIMARY KEY AUTO_INCREMENT,
+    userid INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('request', 'response', 'review', 'message', 'system') NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reference_id INT DEFAULT NULL,
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
+)";
+$conn->query($sql);
+
+// Create coins transaction table
+$sql = "CREATE TABLE IF NOT EXISTS tbl_coins (
+    coin_id INT AUTO_INCREMENT PRIMARY KEY,
+    userid INT NOT NULL,
+    transaction_type ENUM('Purchase', 'Usage') NOT NULL,
+    coins_amount INT NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payment_id VARCHAR(255) NULL,
+    description TEXT NULL,
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
+)";
+$conn->query($sql);
 ?>

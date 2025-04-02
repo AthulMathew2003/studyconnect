@@ -39,6 +39,18 @@ $tutor = $tutor_result->fetch_assoc();
 $tutor_id = $tutor['tutor_id'];
 $tutor_query->close();
 
+// Add this at the top of your file, after session_start() 
+include_once 'notification_helper.php';
+
+// Add this PHP code after the tutor_query->close() line, around line 33-34
+// Fetch profile photo
+$profile_query = $conn->prepare("SELECT profile_photo FROM tbl_tutors WHERE userid = ?");
+$profile_query->bind_param("i", $userid);
+$profile_query->execute();
+$profile_result = $profile_query->get_result();
+$profile_data = $profile_result->fetch_assoc();
+$profile_photo = ($profile_data && $profile_data['profile_photo']) ? 'uploads/profile_photos/' . $profile_data['profile_photo'] : 'uploads/profile_photos/profile_67d9a866e1dc7.png'; // Default image
+$profile_query->close();
 ?>
 
 <!DOCTYPE html>
@@ -1623,6 +1635,175 @@ $tutor_query->close();
       .stat-trend.neutral {
         color: #7f8c8d;
       }
+
+      .rating-breakdown {
+        padding: 10px;
+        border-top: 1px solid var(--input-color);
+      }
+
+      .rating-bar {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+        font-size: 0.9rem;
+      }
+
+      .rating-bar > div {
+        background: #eee;
+        height: 8px;
+        border-radius: 4px;
+        margin: 0 10px;
+        flex-grow: 1;
+      }
+
+      .rating-bar > div > div {
+        background: var(--accent-color);
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+
+      /* Add notification popup styles */
+      .notification-icon {
+        position: relative;
+        cursor: pointer;
+        font-size: 1.5rem;
+      }
+
+      .notification-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background-color: #FF5252;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .notification-popup {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 350px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+        z-index: 1000;
+        overflow: hidden;
+      }
+
+      .notification-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background-color: var(--accent-color);
+        color: white;
+      }
+
+      .notification-popup-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+
+      .close-notification {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+      }
+
+      .notification-popup-content {
+        max-height: 350px;
+        overflow-y: auto;
+      }
+
+      .notification-loading {
+        padding: 20px;
+        text-align: center;
+        color: #666;
+      }
+
+      .notification-empty {
+        padding: 30px 20px;
+        text-align: center;
+        color: #666;
+      }
+
+      .notification-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .notification-item:hover {
+        background-color: #f9f9f9;
+      }
+
+      .notification-item.unread {
+        background-color: rgba(134, 114, 255, 0.05);
+        position: relative;
+      }
+
+      .notification-item.unread:before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        background-color: var(--accent-color);
+        border-radius: 50%;
+      }
+
+      .notification-title {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: var(--text-color);
+      }
+
+      .notification-message {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 5px;
+      }
+
+      .notification-time {
+        font-size: 0.8rem;
+        color: #999;
+      }
+
+      .notification-popup-footer {
+        display: flex;
+        justify-content: center;
+        padding: 12px 20px;
+        background-color: #f9f9f9;
+      }
+
+      .notification-popup-footer button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--accent-color);
+        font-size: 0.9rem;
+        padding: 5px;
+      }
+
+      .notification-popup-footer button:hover {
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
@@ -1661,12 +1842,67 @@ $tutor_query->close();
             <div class="ratings-reviews">
               ⭐
               <div class="dropdown-menu">
+                <?php
+                // Fetch average rating and total review count
+                $rating_query = $conn->prepare("
+                  SELECT 
+                    AVG(rating) as avg_rating,
+                    COUNT(*) as total_reviews,
+                    COUNT(CASE WHEN rating = 5 THEN 1 END) as five_star,
+                    COUNT(CASE WHEN rating = 4 THEN 1 END) as four_star,
+                    COUNT(CASE WHEN rating = 3 THEN 1 END) as three_star,
+                    COUNT(CASE WHEN rating = 2 THEN 1 END) as two_star,
+                    COUNT(CASE WHEN rating = 1 THEN 1 END) as one_star
+                  FROM tbl_review 
+                  WHERE tutor_id = ?
+                ");
+                
+                $rating_query->bind_param("i", $tutor_id);
+                $rating_query->execute();
+                $rating_result = $rating_query->get_result();
+                $rating_data = $rating_result->fetch_assoc();
+                
+                $avg_rating = number_format($rating_data['avg_rating'] ?? 0, 1);
+                $total_reviews = $rating_data['total_reviews'] ?? 0;
+                ?>
                 <div class="ratings-stat">
-                  <span class="star-rating">⭐ 4.8</span>
-                  <span>(120 reviews)</span>
+                  <span class="star-rating">⭐ <?php echo $avg_rating; ?></span>
+                  <span>(<?php echo $total_reviews; ?> reviews)</span>
                 </div>
-                <a href="#">View All Reviews</a>
-                <a href="#">Rating Statistics</a>
+                <?php if ($total_reviews > 0): ?>
+                <div class="rating-breakdown" style="padding: 10px; border-top: 1px solid var(--input-color);">
+                  <?php
+                  $star_counts = [
+                    5 => $rating_data['five_star'],
+                    4 => $rating_data['four_star'],
+                    3 => $rating_data['three_star'],
+                    2 => $rating_data['two_star'],
+                    1 => $rating_data['one_star']
+                  ];
+                  
+                  foreach ($star_counts as $stars => $count) {
+                    $percentage = ($total_reviews > 0) ? ($count / $total_reviews) * 100 : 0;
+                    ?>
+                    <div class="rating-bar" style="display: flex; align-items: center; margin: 5px 0;">
+                      <span style="width: 60px;"><?php echo $stars; ?> stars</span>
+                      <div style="flex-grow: 1; margin: 0 10px;">
+                        <div style="background: #eee; height: 8px; border-radius: 4px;">
+                          <div style="background: var(--accent-color); width: <?php echo $percentage; ?>%; height: 100%; border-radius: 4px;"></div>
+                        </div>
+                      </div>
+                      <span style="width: 40px;"><?php echo $count; ?></span>
+                    </div>
+                    <?php
+                  }
+                  ?>
+                </div>
+                <?php endif; ?>
+                <form action="view_reviews.php" method="post" style="margin: 0;">
+                  <input type="hidden" name="tutor_id" value="<?php echo $tutor_id; ?>">
+                  <button type="submit" style="width: 100%; text-align: left; padding: 0.8rem; background: none; border: none; color: var(--text-color); cursor: pointer; transition: 0.3s;">
+                    View All Reviews
+                  </button>
+                </form>
               </div>
             </div>
             <div class="coin-wallet">
@@ -1675,17 +1911,17 @@ $tutor_query->close();
                 <div class="coin-balance">
                   Balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?> coins</span>
                 </div>
-                <a href="#">Buy Coins</a>
+                <a href="buy_coins.php">Buy Coins</a>
                 <a href="#">Previous Transactions</a>
                 <a href="#">Coin History</a>
               </div>
             </div>
-            <div class="notification-icon">
+            <div class="notification-icon" id="notification-bell">
               🔔
-              <span class="notification-badge">3</span>
+              <span class="notification-badge" id="notification-count" style="display: none;">0</span>
             </div>
             <div class="profile-dropdown">
-              <img src="1.webp" alt="Profile" class="profile-img" />
+              <img src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Profile" class="profile-img" />
               <div class="dropdown-menu">
                 <a href="teacherprofile.php">Profile</a>
                 <a href="confirmpassword.php">Forgot Password</a>
@@ -2099,7 +2335,7 @@ $tutor_query->close();
               <div class="chat-main">
                 <div class="chat-header" id="chat-header">
                   <div class="chat-contact">
-                    <img src="1.webp" alt="Contact" class="contact-img">
+                    <!-- <img src="1.webp" alt="Contact" class="contact-img"> -->
                     <div class="contact-info">
                       <h3 id="selected-contact-name">Select a student</h3>
                       <span class="status" id="selected-contact-status">-</span>
@@ -3060,6 +3296,230 @@ $tutor_query->close();
     function closeInsufficientCoinsModal() {
         document.querySelector('.insufficient-coins-modal').style.display = 'none';
     }
+
+    // Add this to your existing JavaScript code
+    document.addEventListener('DOMContentLoaded', function() {
+      const notificationBell = document.getElementById('notification-bell');
+      const notificationPopup = document.getElementById('notification-popup');
+      const closeNotification = document.getElementById('close-notification');
+      const notificationList = document.getElementById('notification-list');
+      const markAllReadBtn = document.getElementById('mark-all-read');
+      const notificationCount = document.getElementById('notification-count');
+      
+      // Toggle notification popup when bell is clicked
+      if (notificationBell) {
+        notificationBell.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (notificationPopup.style.display === 'block') {
+            notificationPopup.style.display = 'none';
+          } else {
+            notificationPopup.style.display = 'block';
+            loadNotifications();
+          }
+        });
+      }
+      
+      // Close notification popup when X is clicked
+      if (closeNotification) {
+        closeNotification.addEventListener('click', function() {
+          notificationPopup.style.display = 'none';
+        });
+      }
+      
+      // Close notification popup when clicking outside
+      document.addEventListener('click', function(e) {
+        if (notificationPopup && notificationPopup.style.display === 'block' && 
+            !notificationPopup.contains(e.target) && 
+            e.target !== notificationBell) {
+          notificationPopup.style.display = 'none';
+        }
+      });
+      
+      // Mark all notifications as read
+      if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function() {
+          fetch('mark_notification_read.php', {
+            method: 'POST'
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Reload notifications
+              loadNotifications();
+              
+              // Hide notification count
+              if (notificationCount) {
+                notificationCount.style.display = 'none';
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+          });
+        });
+      }
+      
+      // Function to load notifications
+      function loadNotifications() {
+        if (!notificationList) return;
+        
+        notificationList.innerHTML = '<div class="notification-loading">Loading notifications...</div>';
+        
+        fetch('get_notifications.php')
+          .then(response => {
+            // First check if the response is ok
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then(data => {
+            // Update notification count
+            if (notificationCount) {
+              if (data.unread_count > 0) {
+                notificationCount.style.display = 'flex';
+                notificationCount.textContent = data.unread_count;
+              } else {
+                notificationCount.style.display = 'none';
+              }
+            }
+            
+            // Update notification list
+            notificationList.innerHTML = '';
+            
+            if (!data.notifications || data.notifications.length === 0) {
+              notificationList.innerHTML = '<div class="notification-empty">No notifications</div>';
+              return;
+            }
+            
+            // Add notifications to list
+            data.notifications.forEach(notification => {
+              const notificationItem = document.createElement('div');
+              notificationItem.className = `notification-item ${notification.is_read ? '' : 'unread'}`;
+              notificationItem.dataset.id = notification.id;
+              
+              const time = timeAgo(new Date(notification.created_at));
+              
+              notificationItem.innerHTML = `
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                <div class="notification-time">${time}</div>
+              `;
+              
+              // Mark notification as read when clicked
+              notificationItem.addEventListener('click', function() {
+                if (!notification.is_read) {
+                  markNotificationAsRead(notification.id);
+                }
+              });
+              
+              notificationList.appendChild(notificationItem);
+            });
+          })
+          .catch(error => {
+            console.error('Error loading notifications:', error);
+            notificationList.innerHTML = '<div class="notification-empty">Failed to load notifications</div>';
+          });
+      }
+      
+      // Function to mark notification as read
+      function markNotificationAsRead(notificationId) {
+        const formData = new FormData();
+        formData.append('notification_id', notificationId);
+        
+        fetch('mark_notification_read.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Reload notifications
+            loadNotifications();
+          }
+        })
+        .catch(error => {
+          console.error('Error marking notification as read:', error);
+        });
+      }
+      
+      // Time ago function
+      function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        
+        let interval = Math.floor(seconds / 31536000);
+        if (interval >= 1) {
+          return interval + ' year' + (interval === 1 ? '' : 's') + ' ago';
+        }
+        
+        interval = Math.floor(seconds / 2592000);
+        if (interval >= 1) {
+          return interval + ' month' + (interval === 1 ? '' : 's') + ' ago';
+        }
+        
+        interval = Math.floor(seconds / 86400);
+        if (interval >= 1) {
+          return interval + ' day' + (interval === 1 ? '' : 's') + ' ago';
+        }
+        
+        interval = Math.floor(seconds / 3600);
+        if (interval >= 1) {
+          return interval + ' hour' + (interval === 1 ? '' : 's') + ' ago';
+        }
+        
+        interval = Math.floor(seconds / 60);
+        if (interval >= 1) {
+          return interval + ' minute' + (interval === 1 ? '' : 's') + ' ago';
+        }
+        
+        return 'just now';
+      }
+      
+      // Check for notifications on page load
+      if (notificationBell && notificationCount) {
+        loadNotifications();
+        
+        // Check for new notifications every minute
+        setInterval(loadNotifications, 60000);
+      }
+    });
+
+    // Add this to your existing JavaScript
+    // Function to check for new notifications without updating the UI
+    function checkNewNotifications() {
+      fetch('get_notifications.php')
+        .then(response => response.json())
+        .then(data => {
+          // Update notification count if different from current
+          const currentCount = document.getElementById('notification-count').textContent;
+          if (data.unread_count > 0 && data.unread_count !== parseInt(currentCount)) {
+            const notificationCount = document.getElementById('notification-count');
+            notificationCount.style.display = 'flex';
+            notificationCount.textContent = data.unread_count;
+            
+            // Play notification sound if count increased
+            if (data.unread_count > parseInt(currentCount) || (currentCount === '' && data.unread_count > 0)) {
+              playNotificationSound();
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error checking notifications:', error);
+        });
+    }
+
+    // Function to play notification sound
+    function playNotificationSound() {
+      // You can add a sound file here if desired
+      // const sound = new Audio('notification.mp3');
+      // sound.play();
+      
+      // For now, just console log
+      console.log('New notification received!');
+    }
+
+    // Check for new notifications every 15 seconds
+    setInterval(checkNewNotifications, 15000);
     </script>
   </body>
 </html>
@@ -3080,3 +3540,78 @@ $tutor_query->close();
         </div>
     </div>
 </div>
+
+<!-- Add this notification popup HTML after the notification icon -->
+<div class="notification-popup" id="notification-popup">
+  <div class="notification-popup-header">
+    <h3>Notifications</h3>
+    <button class="close-notification" id="close-notification">×</button>
+  </div>
+  <div class="notification-popup-content" id="notification-list">
+    <div class="notification-loading">Loading notifications...</div>
+  </div>
+  <div class="notification-popup-footer">
+    <button class="mark-all-read" id="mark-all-read">Mark all as read</button>
+  </div>
+</div>
+
+<?php
+// After successfully accepting a request
+include_once 'notification_helper.php';
+
+// Get tutor info
+$tutor_query = $conn->prepare("SELECT t.userid, u.username FROM tbl_tutors t JOIN users u ON t.userid = u.userid WHERE t.tutor_id = ?");
+$tutor_query->bind_param("i", $tutor_id);
+$tutor_query->execute();
+$tutor_result = $tutor_query->get_result();
+$tutor_data = $tutor_result->fetch_assoc();
+$tutor_userid = $tutor_data['userid'];
+$tutor_name = $tutor_data['username'];
+
+// Get student name
+$student_query = $conn->prepare("
+    SELECT u.username 
+    FROM users u
+    JOIN tbl_student s ON u.userid = s.userid
+    WHERE s.student_id = ?
+");
+$student_query->bind_param("i", $student_id);
+$student_query->execute();
+$student_result = $student_query->get_result();
+$student_data = $student_result->fetch_assoc();
+$student_name = $student_data['username'];
+
+// Create notification for tutor
+$title = "Request Accepted";
+$message = "$student_name has accepted your tutoring request";
+addNotification($conn, $tutor_userid, $title, $message, "response", $request_id);
+
+// After successfully creating a request
+include 'notification_helper.php';
+
+// Get tutor's userid from tutor_id
+$tutor_query = $conn->prepare("SELECT userid FROM tbl_tutors WHERE tutor_id = ?");
+$tutor_query->bind_param("i", $tutor_id);
+$tutor_query->execute();
+$tutor_result = $tutor_query->get_result();
+$tutor_data = $tutor_result->fetch_assoc();
+$tutor_userid = $tutor_data['userid'];
+
+// Get student name
+$student_query = $conn->prepare("
+    SELECT u.username 
+    FROM users u
+    JOIN tbl_student s ON u.userid = s.userid
+    WHERE s.student_id = ?
+");
+$student_query->bind_param("i", $student_id);
+$student_query->execute();
+$student_result = $student_query->get_result();
+$student_data = $student_result->fetch_assoc();
+$student_name = $student_data['username'];
+
+// Create notification for tutor
+$title = "New Request";
+$message = "$student_name has sent you a tutoring request for $subject";
+addNotification($conn, $tutor_userid, $title, $message, "request", $request_id);
+?>

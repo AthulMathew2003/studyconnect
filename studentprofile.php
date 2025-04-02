@@ -676,7 +676,7 @@ if ($student_result->num_rows > 0) {
     </script>
 </head>
 <body>
-    <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px;">
+    <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000;">
         <a href="studentdashboard.php" class="back-button" style="padding: 10px 15px; background-color: #b3a5ff; color: white; border-radius: 5px; text-decoration: none;">Back to Dashboard</a>
         <a href="logout.php" class="back-button" style="padding: 10px 15px; background-color: #ff6b6b; color: white; border-radius: 5px; text-decoration: none;">Logout</a>
     </div>

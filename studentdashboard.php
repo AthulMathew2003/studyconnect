@@ -22,6 +22,30 @@ if ($result->num_rows === 0) {
 }
 $stmt->close();
 $_SESSION['back_view'] = 'studentdashboard.php';
+
+if (isset($_SESSION['userid'])) {
+    $userid = $_SESSION['userid'];
+    
+    // Insert test notifications
+    $types = ['request', 'response', 'message', 'system'];
+    
+    for ($i = 0; $i < 5; $i++) {
+        $title = "Test Notification " . ($i + 1);
+        $message = "This is a test notification message #" . ($i + 1);
+        $type = $types[array_rand($types)];
+        $is_read = $i > 2 ? 1 : 0; // First 3 unread, rest read
+        
+        $query = $conn->prepare("
+            INSERT INTO tbl_notifications (userid, title, message, type, is_read)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+        
+        $query->bind_param("isssi", $userid, $title, $message, $type, $is_read);
+        $query->execute();
+    }
+    
+    
+}
 ?>
 
 <!DOCTYPE html>
@@ -73,16 +97,79 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         <main class="main-content">
             <!-- Top Navigation -->
             <header class="top-nav">
-                <div class="search-bar">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Search courses, assignments...">
-                </div>
-                <div class="nav-right">
-                    <div class="notifications">
+               
+                <div style="display: flex; align-items: center; margin-left: auto;">
+                    <?php
+                    // Get user's coin balance
+                    $userid = $_SESSION['userid'];
+                    $walletQuery = $conn->prepare("SELECT coin_balance FROM tbl_coinwallet WHERE userid = ?");
+                    $walletQuery->bind_param("i", $userid);
+                    $walletQuery->execute();
+                    $walletResult = $walletQuery->get_result();
+                    
+                    $coinBalance = 0;
+                    if ($walletResult && $walletResult->num_rows > 0) {
+                        $walletData = $walletResult->fetch_assoc();
+                        $coinBalance = $walletData['coin_balance'];
+                    }
+                    $walletQuery->close();
+                    ?>
+                    <div class="notifications" style="margin-right: 15px; position: relative; cursor: pointer;" id="notificationIcon">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
+                        <span class="notification-badge" id="notification-count" style="position: absolute; top: -8px; right: -8px; background-color: #FF5252; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; display: none;">0</span>
+                        
+                        <!-- Notification Dropdown -->
+                        <div id="notificationDropdown" style="display: none; position: absolute; top: 100%; right: -10px; width: 320px; background: white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin-top: 10px; z-index: 1000;">
+                            <!-- Dropdown Arrow -->
+                            <div style="position: absolute; top: -8px; right: 15px; width: 16px; height: 16px; background: white; transform: rotate(45deg); box-shadow: -3px -3px 5px rgba(0,0,0,0.04);"></div>
+                            
+                            <!-- Notification Header -->
+                            <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 16px;">Notifications</h3>
+                                <button id="markAllRead" style="background: none; border: none; color: #8672FF; cursor: pointer; font-size: 13px;">Mark all as read</button>
+                            </div>
+                            
+                            <!-- Notification List -->
+                            <div id="notificationList" style="max-height: 300px; overflow-y: auto;">
+                                <div class="notification-loading" style="padding: 20px; text-align: center; color: #666;">
+                                    Loading notifications...
+                                </div>
+                            </div>
+                            
+                            <!-- Notification Footer -->
+                            <div style="padding: 12px 15px; text-align: center; border-top: 1px solid #eee;">
+                                <a href="#" style="color: #8672FF; text-decoration: none; font-size: 13px;">View All Notifications</a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="user-profile">
+
+                    <!-- Coins Wallet -->
+                    <div class="coin-wallet" style="margin-right: 15px; position: relative; cursor: pointer;">
+                        <i class="fas fa-coins" style="color: #FFD700;"></i>
+                        
+                        <!-- Coins Dropdown -->
+                        <div class="coins-dropdown" style="display: none; position: absolute; top: 100%; right: -10px; width: 200px; background: white; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); margin-top: 10px; z-index: 1000;">
+                            <!-- Dropdown Arrow -->
+                            <div style="position: absolute; top: -8px; right: 15px; width: 16px; height: 16px; background: white; transform: rotate(45deg); box-shadow: -3px -3px 5px rgba(0,0,0,0.04);"></div>
+                            
+                            <!-- Coin Balance -->
+                            <div style="padding: 15px; border-bottom: 1px solid #eee; text-align: center;">
+                                <div style="font-weight: 600; font-size: 20px; color: #FFD700; margin-bottom: 5px;">
+                                    <i class="fas fa-coins"></i> <?php echo $coinBalance; ?>
+                                </div>
+                                <div style="font-size: 12px; color: #666;">Available Coins</div>
+                            </div>
+                            
+                            <!-- Buy Coins Button -->
+                            <div style="padding: 15px; text-align: center;">
+                                <a href="buy_coins.php" style="display: block; background: #8672FF; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: 500; transition: all 0.3s ease;">
+                                    <i class="fas fa-plus-circle"></i> Buy Coins
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-profile" style="cursor: pointer;">
                         <svg class="profile-icon" viewBox="0 0 24 24" width="24" height="24">
                             <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                         </svg>
@@ -120,6 +207,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
                             <div class="stat-info">
                                 <h3>Coin Balance</h3>
                                 <p><?php echo $coinBalance; ?> coins</p>
+                                <a href="buy_coins.php" class="buy-coins-link" style="display: inline-block; margin-top: 5px; padding: 3px 8px; background: #8672FF; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">Buy Coins</a>
                             </div>
                         </div>
                         
@@ -2056,6 +2144,261 @@ $_SESSION['back_view'] = 'studentdashboard.php';
             event.preventDefault();
             window.location.href = 'buy_coins.php';
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if elements exist before using them
+            const notificationIcon = document.getElementById('notificationIcon');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            const notificationCount = document.getElementById('notification-count');
+            const notificationList = document.getElementById('notificationList');
+            const markAllRead = document.getElementById('markAllRead');
+            
+            // Exit if required elements don't exist
+            if (!notificationIcon || !notificationDropdown || !notificationCount || !notificationList) {
+                console.error('One or more notification elements not found in the HTML');
+                return;
+            }
+            
+            // Toggle dropdown when clicking notification icon
+            notificationIcon.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = notificationDropdown.style.display === 'block';
+                notificationDropdown.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                    // Load notifications when opening dropdown
+                    loadNotifications();
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (notificationDropdown.style.display === 'block' && 
+                    !notificationDropdown.contains(e.target) && 
+                    e.target !== notificationIcon) {
+                    notificationDropdown.style.display = 'none';
+                }
+            });
+            
+            // Prevent dropdown from closing when clicking inside it
+            notificationDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Function to safely fetch JSON
+            async function safelyFetchJson(url, options = {}) {
+                try {
+                    const response = await fetch(url, options);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    
+                    const text = await response.text();
+                    
+                    try {
+                        // Try to parse as JSON
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Invalid JSON response:', text);
+                        throw new Error('Server returned invalid JSON');
+                    }
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    throw error;
+                }
+            }
+            
+            // Function to load notifications
+            async function loadNotifications() {
+                if (!notificationList) return;
+                
+                notificationList.innerHTML = '<div class="notification-loading" style="padding: 20px; text-align: center; color: #666;">Loading notifications...</div>';
+                
+                try {
+                    const data = await safelyFetchJson('get_student_notifications.php');
+                    
+                    // Update notification count
+                    if (notificationCount) {
+                        if (data.unread_count > 0) {
+                            notificationCount.style.display = 'flex';
+                            notificationCount.textContent = data.unread_count;
+                        } else {
+                            notificationCount.style.display = 'none';
+                        }
+                    }
+                    
+                    // Update notification list
+                    if (notificationList) {
+                        notificationList.innerHTML = '';
+                        
+                        if (!data.notifications || data.notifications.length === 0) {
+                            notificationList.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No notifications</div>';
+                            return;
+                        }
+                        
+                        // Add notifications to list
+                        data.notifications.forEach(notification => {
+                            const notificationItem = document.createElement('div');
+                            notificationItem.className = 'notification-item';
+                            notificationItem.dataset.id = notification.id;
+                            notificationItem.style.padding = '12px 15px';
+                            notificationItem.style.borderBottom = '1px solid #eee';
+                            notificationItem.style.cursor = 'pointer';
+                            notificationItem.style.transition = 'background 0.2s';
+                            
+                            if (!notification.is_read) {
+                                notificationItem.style.background = 'rgba(134, 114, 255, 0.05)';
+                            }
+                            
+                            const time = timeAgo(new Date(notification.created_at));
+                            
+                            notificationItem.innerHTML = `
+                                <div style="font-weight: 500; margin-bottom: 5px;">${notification.title}</div>
+                                <div style="font-size: 13px; color: #666;">${notification.message}</div>
+                                <div style="font-size: 11px; color: #999; margin-top: 5px;">${time}</div>
+                            `;
+                            
+                            // Mark notification as read when clicked
+                            notificationItem.addEventListener('click', function() {
+                                if (!notification.is_read) {
+                                    markNotificationAsRead(notification.id);
+                                }
+                            });
+                            
+                            // Add hover effect
+                            notificationItem.addEventListener('mouseover', function() {
+                                this.style.backgroundColor = '#f8f9fa';
+                            });
+                            
+                            notificationItem.addEventListener('mouseout', function() {
+                                if (!notification.is_read) {
+                                    this.style.backgroundColor = 'rgba(134, 114, 255, 0.05)';
+                                } else {
+                                    this.style.backgroundColor = 'white';
+                                }
+                            });
+                            
+                            notificationList.appendChild(notificationItem);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading notifications:', error);
+                    if (notificationList) {
+                        notificationList.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load notifications</div>';
+                    }
+                }
+            }
+            
+            // Function to mark notification as read
+            async function markNotificationAsRead(notificationId) {
+                try {
+                    const data = await safelyFetchJson('mark_notification_read.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: `notification_id=${notificationId}`
+                    });
+                    
+                    if (data.success) {
+                        // Update UI
+                        const notificationItem = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                        if (notificationItem) {
+                            notificationItem.style.background = 'white';
+                        }
+                        
+                        // Update count
+                        loadNotificationCount();
+                    }
+                } catch (error) {
+                    console.error('Error marking notification as read:', error);
+                }
+            }
+            
+            // Function to mark all notifications as read
+            if (markAllRead) {
+                markAllRead.addEventListener('click', async function() {
+                    try {
+                        const data = await safelyFetchJson('mark_notification_read.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        });
+                        
+                        if (data.success) {
+                            // Update UI
+                            const notificationItems = document.querySelectorAll('.notification-item');
+                            notificationItems.forEach(item => {
+                                item.style.background = 'white';
+                            });
+                            
+                            // Update count
+                            if (notificationCount) {
+                                notificationCount.style.display = 'none';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error marking all notifications as read:', error);
+                    }
+                });
+            }
+            
+            // Function to convert timestamp to "time ago" format
+            function timeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+                
+                let interval = Math.floor(seconds / 31536000);
+                if (interval >= 1) {
+                    return interval + ' year' + (interval === 1 ? '' : 's') + ' ago';
+                }
+                
+                interval = Math.floor(seconds / 2592000);
+                if (interval >= 1) {
+                    return interval + ' month' + (interval === 1 ? '' : 's') + ' ago';
+                }
+                
+                interval = Math.floor(seconds / 86400);
+                if (interval >= 1) {
+                    return interval + ' day' + (interval === 1 ? '' : 's') + ' ago';
+                }
+                
+                interval = Math.floor(seconds / 3600);
+                if (interval >= 1) {
+                    return interval + ' hour' + (interval === 1 ? '' : 's') + ' ago';
+                }
+                
+                interval = Math.floor(seconds / 60);
+                if (interval >= 1) {
+                    return interval + ' minute' + (interval === 1 ? '' : 's') + ' ago';
+                }
+                
+                return 'just now';
+            }
+            
+            // Function to load just the notification count
+            async function loadNotificationCount() {
+                if (!notificationCount) return;
+                
+                try {
+                    const data = await safelyFetchJson('get_student_notifications.php');
+                    
+                    if (data.unread_count > 0) {
+                        notificationCount.style.display = 'flex';
+                        notificationCount.textContent = data.unread_count;
+                    } else {
+                        notificationCount.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error loading notification count:', error);
+                }
+            }
+            
+            // Check for new notifications periodically
+            loadNotificationCount();
+            setInterval(loadNotificationCount, 30000); // Check every 30 seconds
+        });
     </script>
 
     <!-- Add this before closing body tag -->
@@ -4378,6 +4721,224 @@ $_SESSION['back_view'] = 'studentdashboard.php';
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     }
+
+    .notification-item:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    .notification-item.unread {
+        background-color: rgba(134, 114, 255, 0.05);
+    }
+
+    #notificationDropdown {
+        transition: all 0.3s ease;
+    }
+
+    #markAllRead:hover {
+        opacity: 0.8;
+    }
     </style>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Coin wallet dropdown functionality
+        const coinWallet = document.querySelector('.coin-wallet');
+        const coinsDropdown = document.querySelector('.coins-dropdown');
+        
+        if (coinWallet && coinsDropdown) {
+            // Toggle coin wallet dropdown when clicking on it
+            coinWallet.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = coinsDropdown.style.display === 'block';
+                coinsDropdown.style.display = isVisible ? 'none' : 'block';
+            });
+            
+            // Close coin dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!coinWallet.contains(e.target)) {
+                    coinsDropdown.style.display = 'none';
+                }
+            });
+        }
+
+        // Notification functionality
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationCount = document.getElementById('notification-count');
+        const notificationList = document.getElementById('notificationList');
+        const markAllReadBtn = document.getElementById('markAllRead');
+
+        // Toggle notification dropdown
+        if (notificationIcon && notificationDropdown) {
+            notificationIcon.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isVisible = notificationDropdown.style.display === 'block';
+                notificationDropdown.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                    fetchNotifications();
+                }
+            });
+            
+            // Close notification dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!notificationIcon.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                    notificationDropdown.style.display = 'none';
+                }
+            });
+        }
+
+        // Mark all notifications as read
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', function() {
+                markAllNotificationsAsRead();
+            });
+        }
+
+        // Function to fetch notifications
+        function fetchNotifications() {
+            fetch('get_notifications.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        notificationList.innerHTML = `<div style="padding: 20px; text-align: center;">${data.error}</div>`;
+                        return;
+                    }
+                    
+                    // Update notification count
+                    if (data.unread_count > 0) {
+                        notificationCount.textContent = data.unread_count;
+                        notificationCount.style.display = 'flex';
+                    } else {
+                        notificationCount.style.display = 'none';
+                    }
+                    
+                    // Display notifications
+                    if (data.notifications.length === 0) {
+                        notificationList.innerHTML = '<div style="padding: 20px; text-align: center;">No notifications</div>';
+                    } else {
+                        let html = '';
+                        data.notifications.forEach(notification => {
+                            html += `
+                                <div class="notification-item" data-id="${notification.id}" style="padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; ${notification.is_read ? '' : 'background-color: #f7f7ff;'}">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                        <h4 style="margin: 0; font-size: 14px;">${notification.title}</h4>
+                                        <small style="color: #777;">${formatTimeAgo(new Date(notification.created_at))}</small>
+                                    </div>
+                                    <p style="margin: 0; font-size: 13px; color: #666;">${notification.message}</p>
+                                </div>
+                            `;
+                        });
+                        notificationList.innerHTML = html;
+                        
+                        // Add click event to mark notifications as read
+                        document.querySelectorAll('.notification-item').forEach(item => {
+                            item.addEventListener('click', function() {
+                                const notificationId = this.getAttribute('data-id');
+                                markNotificationAsRead(notificationId, this);
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching notifications:', error);
+                    notificationList.innerHTML = '<div style="padding: 20px; text-align: center;">Error loading notifications</div>';
+                });
+        }
+        
+        // Mark single notification as read
+        function markNotificationAsRead(notificationId, element) {
+            const formData = new FormData();
+            formData.append('notification_id', notificationId);
+            
+            fetch('mark_notification_read.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    element.style.backgroundColor = '';
+                    
+                    // Update notification count
+                    let currentCount = parseInt(notificationCount.textContent);
+                    if (currentCount > 0) {
+                        currentCount--;
+                        
+                        if (currentCount > 0) {
+                            notificationCount.textContent = currentCount;
+                        } else {
+                            notificationCount.style.display = 'none';
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+        
+        // Mark all notifications as read
+        function markAllNotificationsAsRead() {
+            fetch('mark_notification_read.php', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI
+                    document.querySelectorAll('.notification-item').forEach(item => {
+                        item.style.backgroundColor = '';
+                    });
+                    
+                    // Hide notification count
+                    notificationCount.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        }
+        
+        // Helper function to format time ago
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) {
+                return interval + " year" + (interval === 1 ? "" : "s") + " ago";
+            }
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) {
+                return interval + " month" + (interval === 1 ? "" : "s") + " ago";
+            }
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) {
+                return interval + " day" + (interval === 1 ? "" : "s") + " ago";
+            }
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) {
+                return interval + " hour" + (interval === 1 ? "" : "s") + " ago";
+            }
+            
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) {
+                return interval + " minute" + (interval === 1 ? "" : "s") + " ago";
+            }
+            
+            return "Just now";
+        }
+
+        // Fetch notifications on page load
+        fetchNotifications();
+        
+        // Periodically check for new notifications
+        setInterval(fetchNotifications, 60000); // Check every minute
+    });
+    </script>
 </body>
 </html>
