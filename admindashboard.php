@@ -107,6 +107,11 @@ if (isset($_POST['reject_request']) && isset($_POST['request_type'])) {
 $active_view = isset($_SESSION['active_view']) ? $_SESSION['active_view'] : 'dashboard';
 unset($_SESSION['active_view']); // Clear it after use
 
+// Check if view is set in URL (for direct links)
+if (isset($_GET['view']) && in_array($_GET['view'], ['dashboard', 'users', 'requests', 'stats', 'reports', 'coins'])) {
+    $active_view = $_GET['view'];
+}
+
 // Handle user deletion
 if (isset($_POST['delete_user'])) {
     $user_id = mysqli_real_escape_string($conn, $_POST['delete_user']);
@@ -137,6 +142,27 @@ if (isset($_POST['delete_user'])) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="admindash.css" />
     <script type="text/javascript" src="admindash.js" defer></script>
+    <script>
+        // Set active view based on PHP variable
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeView = '<?php echo $active_view; ?>';
+            document.querySelectorAll('.sidebar-nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.view === activeView) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Update main heading
+            const mainHeading = document.querySelector('.top-navbar h1');
+            if (mainHeading) {
+                const activeItemText = document.querySelector(`.sidebar-nav-item[data-view="${activeView}"] span`);
+                if (activeItemText) {
+                    mainHeading.textContent = activeItemText.textContent;
+                }
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -167,13 +193,9 @@ if (isset($_POST['delete_user'])) {
                     <i class="fas fa-chart-bar"></i>
                     <span>Add Data</span>
                 </li>
-                <li class="sidebar-nav-item" data-view="content">
-                    <i class="fas fa-file-alt"></i>
-                    <span>Content</span>
-                </li>
-                <li class="sidebar-nav-item" data-view="settings">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                <li class="sidebar-nav-item" data-view="coins">
+                    <i class="fas fa-coins"></i>
+                    <span>Coin Transactions</span>
                 </li>
                 <li class="sidebar-nav-item" id="dark-mode-toggle">
                     <i class="fas fa-moon"></i>
@@ -945,163 +967,375 @@ if (isset($_POST['delete_user'])) {
                     });
                     </script>
                 </div>
-                
-                <!-- Content Management View -->
-                <div id="content-view" style="<?php if ($active_view !== 'content') echo 'display: none;' ?>">
+
+                <!-- Coin Transactions View -->
+                <div id="coins-view" style="<?php if ($active_view !== 'coins') echo 'display: none;' ?>">
                     <div class="section-header" style="margin-bottom: 20px;">
-                        <h2>Content Management</h2>
-                        <p class="section-subtitle">Manage system notifications and announcements</p>
+                        <h2>Coin Transactions</h2>
+                        <p class="section-subtitle">View and manage all coin transactions in the system</p>
                     </div>
-                    
-                    <!-- System Announcements Section -->
-                    <div class="content-section" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 30px;">
-                        <h3>System Announcements</h3>
-                        <p>Create new announcements to be sent to all users on the platform</p>
-                        
-                        <form method="POST" action="" style="margin-top: 20px;">
-                            <input type="hidden" name="action" value="create_announcement">
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label for="announcement_title" style="display: block; margin-bottom: 5px; font-weight: 500;">Announcement Title</label>
-                                <input type="text" name="announcement_title" id="announcement_title" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+
+                    <!-- Filter Section -->
+                    <div class="filter-section" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                        <form method="GET" action="" id="filterForm">
+                            <input type="hidden" name="view" value="coins">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div>
+                                    <label for="transaction_type" style="display: block; margin-bottom: 5px; font-weight: 500;">Transaction Type</label>
+                                    <select name="transaction_type" id="transaction_type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                        <option value="">All Types</option>
+                                        <option value="Purchase" <?php echo isset($_GET['transaction_type']) && $_GET['transaction_type'] == 'Purchase' ? 'selected' : ''; ?>>Purchase</option>
+                                        <option value="Usage" <?php echo isset($_GET['transaction_type']) && $_GET['transaction_type'] == 'Usage' ? 'selected' : ''; ?>>Usage</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="user_filter" style="display: block; margin-bottom: 5px; font-weight: 500;">User</label>
+                                    <select name="user_id" id="user_filter" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                        <option value="">All Users</option>
+                                        <?php
+                                        $users_query = "SELECT userid, username FROM users ORDER BY username";
+                                        $users_result = mysqli_query($conn, $users_query);
+                                        while ($user = mysqli_fetch_assoc($users_result)) {
+                                            $selected = isset($_GET['user_id']) && $_GET['user_id'] == $user['userid'] ? 'selected' : '';
+                                            echo "<option value='" . $user['userid'] . "' $selected>" . htmlspecialchars($user['username']) . "</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="date_from" style="display: block; margin-bottom: 5px; font-weight: 500;">Date From</label>
+                                    <input type="date" name="date_from" id="date_from" value="<?php echo isset($_GET['date_from']) ? $_GET['date_from'] : ''; ?>" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                </div>
+                                <div>
+                                    <label for="date_to" style="display: block; margin-bottom: 5px; font-weight: 500;">Date To</label>
+                                    <input type="date" name="date_to" id="date_to" value="<?php echo isset($_GET['date_to']) ? $_GET['date_to'] : ''; ?>" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                </div>
+                                <div style="display: flex; align-items: flex-end;">
+                                    <button type="submit" style="width: 100%; padding: 8px; background-color: #8672ff; color: white; border: none; border-radius: 5px; cursor: pointer;">Apply Filters</button>
+                                </div>
+                                <div style="display: flex; align-items: flex-end;">
+                                    <button type="button" id="resetFilters" style="width: 100%; padding: 8px; background-color: #f1f1f1; border: none; border-radius: 5px; cursor: pointer;">Reset Filters</button>
+                                </div>
                             </div>
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label for="announcement_message" style="display: block; margin-bottom: 5px; font-weight: 500;">Announcement Message</label>
-                                <textarea name="announcement_message" id="announcement_message" required rows="5" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
-                            </div>
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label for="user_type" style="display: block; margin-bottom: 5px; font-weight: 500;">Target Users</label>
-                                <select name="user_type" id="user_type" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                                    <option value="all">All Users</option>
-                                    <option value="student">Students Only</option>
-                                    <option value="teacher">Teachers Only</option>
-                                </select>
-                            </div>
-                            
-                            <button type="submit" style="background-color: #8672ff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: 500;">Send Announcement</button>
                         </form>
                     </div>
-                    
-                    <!-- Previous Announcements Section -->
-                    <div class="content-section" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 30px;">
-                        <h3>Previous Announcements</h3>
+
+                    <!-- Transaction Statistics -->
+                    <div class="stats-overview" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <?php
+                        // Get summary statistics for coins
+                        $stats_condition = "";
+                        $params = [];
+
+                        if (isset($_GET['transaction_type']) && !empty($_GET['transaction_type'])) {
+                            $transaction_type = mysqli_real_escape_string($conn, $_GET['transaction_type']);
+                            $stats_condition .= " AND c.transaction_type = '$transaction_type'";
+                        }
+
+                        if (isset($_GET['user_id']) && !empty($_GET['user_id'])) {
+                            $user_id = mysqli_real_escape_string($conn, $_GET['user_id']);
+                            $stats_condition .= " AND c.userid = '$user_id'";
+                        }
+
+                        if (isset($_GET['date_from']) && !empty($_GET['date_from'])) {
+                            $date_from = mysqli_real_escape_string($conn, $_GET['date_from']);
+                            $stats_condition .= " AND DATE(c.transaction_date) >= '$date_from'";
+                        }
+
+                        if (isset($_GET['date_to']) && !empty($_GET['date_to'])) {
+                            $date_to = mysqli_real_escape_string($conn, $_GET['date_to']);
+                            $stats_condition .= " AND DATE(c.transaction_date) <= '$date_to'";
+                        }
+
+                        // Total transactions
+                        $total_query = "SELECT COUNT(*) as count FROM tbl_coins c WHERE 1=1" . $stats_condition;
+                        $total_result = mysqli_query($conn, $total_query);
+                        $total_transactions = mysqli_fetch_assoc($total_result)['count'];
+
+                        // Total purchased coins
+                        $purchase_query = "SELECT SUM(coins_amount) as total_purchased FROM tbl_coins c WHERE transaction_type = 'Purchase'" . $stats_condition;
+                        $purchase_result = mysqli_query($conn, $purchase_query);
+                        $total_purchased = mysqli_fetch_assoc($purchase_result)['total_purchased'] ?? 0;
+
+                        // Total used coins
+                        $usage_query = "SELECT SUM(coins_amount) as total_used FROM tbl_coins c WHERE transaction_type = 'Usage'" . $stats_condition;
+                        $usage_result = mysqli_query($conn, $usage_query);
+                        $total_used = mysqli_fetch_assoc($usage_result)['total_used'] ?? 0;
+
+                        // Net coin balance in system
+                        $net_balance = $total_purchased - $total_used;
+                        ?>
+
+                        <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <h3>Total Transactions</h3>
+                            <div style="font-size: 32px; font-weight: bold; color: #8672ff; margin-top: 10px;"><?php echo $total_transactions; ?></div>
+                        </div>
+
+                        <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <h3>Total Coins Purchased</h3>
+                            <div style="font-size: 32px; font-weight: bold; color: #4caf50; margin-top: 10px;"><?php echo number_format($total_purchased); ?></div>
+                        </div>
+
+                        <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <h3>Total Coins Used</h3>
+                            <div style="font-size: 32px; font-weight: bold; color: #f44336; margin-top: 10px;"><?php echo number_format($total_used); ?></div>
+                        </div>
+
+                        <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <h3>Net Coin Balance</h3>
+                            <div style="font-size: 32px; font-weight: bold; color: #2196f3; margin-top: 10px;"><?php echo number_format($net_balance); ?></div>
+                        </div>
+                    </div>
+
+                    <!-- Transactions Table -->
+                    <div class="transactions-table-container" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h3>Transaction History</h3>
                         
+                        <?php
+                        // Build the query condition based on filters
+                        $condition = "";
+                        $params = [];
+
+                        if (isset($_GET['transaction_type']) && !empty($_GET['transaction_type'])) {
+                            $transaction_type = mysqli_real_escape_string($conn, $_GET['transaction_type']);
+                            $condition .= " AND c.transaction_type = '$transaction_type'";
+                        }
+
+                        if (isset($_GET['user_id']) && !empty($_GET['user_id'])) {
+                            $user_id = mysqli_real_escape_string($conn, $_GET['user_id']);
+                            $condition .= " AND c.userid = '$user_id'";
+                        }
+
+                        if (isset($_GET['date_from']) && !empty($_GET['date_from'])) {
+                            $date_from = mysqli_real_escape_string($conn, $_GET['date_from']);
+                            $condition .= " AND DATE(c.transaction_date) >= '$date_from'";
+                        }
+
+                        if (isset($_GET['date_to']) && !empty($_GET['date_to'])) {
+                            $date_to = mysqli_real_escape_string($conn, $_GET['date_to']);
+                            $condition .= " AND DATE(c.transaction_date) <= '$date_to'";
+                        }
+
+                        // Count total records for pagination
+                        $count_query = "SELECT COUNT(*) as total FROM tbl_coins c WHERE 1=1" . $condition;
+                        $count_result = mysqli_query($conn, $count_query);
+                        $total_records = mysqli_fetch_assoc($count_result)['total'];
+
+                        // Pagination settings
+                        $records_per_page = 20;
+                        $total_pages = ceil($total_records / $records_per_page);
+                        $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+                        $offset = ($current_page - 1) * $records_per_page;
+
+                        // Get transactions with pagination
+                        $transactions_query = "SELECT c.*, u.username 
+                                             FROM tbl_coins c
+                                             JOIN users u ON c.userid = u.userid
+                                             WHERE 1=1" . $condition . "
+                                             ORDER BY c.transaction_date DESC
+                                             LIMIT $offset, $records_per_page";
+                        $transactions_result = mysqli_query($conn, $transactions_query);
+                        ?>
+
                         <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                             <thead>
                                 <tr>
-                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">Title</th>
-                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">Message</th>
-                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">Target</th>
-                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">Date</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">ID</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">User</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Type</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Coins</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Description</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Payment ID</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php
-                                // Get system notifications
-                                $notifications_query = "SELECT * FROM tbl_notifications 
-                                                      WHERE type = 'system' 
-                                                      ORDER BY created_at DESC 
-                                                      LIMIT 10";
-                                $notifications_result = mysqli_query($conn, $notifications_query);
-                                
-                                if (mysqli_num_rows($notifications_result) == 0) {
-                                    echo "<tr><td colspan='4' style='padding: 12px; text-align: center; border-bottom: 1px solid #ddd;'>No announcements found</td></tr>";
+                                if (mysqli_num_rows($transactions_result) == 0) {
+                                    echo "<tr><td colspan='7' style='padding: 20px; text-align: center;'>No transactions found</td></tr>";
                                 } else {
-                                    while ($row = mysqli_fetch_assoc($notifications_result)) {
+                                    while ($transaction = mysqli_fetch_assoc($transactions_result)) {
+                                        $type_color = $transaction['transaction_type'] == 'Purchase' ? '#4caf50' : '#f44336';
+                                        
                                         echo "<tr>";
-                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($row['title']) . "</td>";
-                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($row['message']) . "</td>";
-                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . ($row['userid'] == 0 ? 'All Users' : 'User #' . $row['userid']) . "</td>";
-                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($row['created_at']) . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . $transaction['coin_id'] . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($transaction['username']) . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd; color: $type_color; font-weight: 500;'>" . $transaction['transaction_type'] . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . number_format($transaction['coins_amount']) . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($transaction['description'] ?? 'N/A') . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . htmlspecialchars($transaction['payment_id'] ?? 'N/A') . "</td>";
+                                        echo "<td style='padding: 12px; border-bottom: 1px solid #ddd;'>" . date('Y-m-d H:i', strtotime($transaction['transaction_date'])) . "</td>";
                                         echo "</tr>";
                                     }
                                 }
                                 ?>
                             </tbody>
                         </table>
+
+                        <!-- Pagination -->
+                        <?php if ($total_pages > 1): ?>
+                        <div class="pagination" style="margin-top: 20px; display: flex; justify-content: center; gap: 5px;">
+                            <?php
+                            // Build the query string for pagination links
+                            $query_params = $_GET;
+                            
+                            // Previous page link
+                            if ($current_page > 1) {
+                                $query_params['page'] = $current_page - 1;
+                                $prev_link = '?' . http_build_query($query_params);
+                                echo '<a href="' . $prev_link . '" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333;">&laquo; Previous</a>';
+                            }
+                            
+                            // Page number links
+                            $start_page = max(1, $current_page - 2);
+                            $end_page = min($total_pages, $current_page + 2);
+                            
+                            for ($i = $start_page; $i <= $end_page; $i++) {
+                                $query_params['page'] = $i;
+                                $page_link = '?' . http_build_query($query_params);
+                                
+                                if ($i == $current_page) {
+                                    echo '<span style="padding: 8px 12px; background-color: #8672ff; color: white; border-radius: 4px;">' . $i . '</span>';
+                                } else {
+                                    echo '<a href="' . $page_link . '" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333;">' . $i . '</a>';
+                                }
+                            }
+                            
+                            // Next page link
+                            if ($current_page < $total_pages) {
+                                $query_params['page'] = $current_page + 1;
+                                $next_link = '?' . http_build_query($query_params);
+                                echo '<a href="' . $next_link . '" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #333;">Next &raquo;</a>';
+                            }
+                            ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
-                    
-                    <!-- Notification Templates Section -->
-                    <div class="content-section" style="background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <h3>Email Notification Settings</h3>
-                        <p>Configure system email notification settings for various actions</p>
-                        
-                        <form method="POST" action="" style="margin-top: 20px;">
-                            <input type="hidden" name="action" value="update_notification_settings">
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="checkbox" name="notify_new_connection" checked>
-                                    <span>Send email for new connection request</span>
-                                </label>
-                            </div>
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="checkbox" name="notify_new_message" checked>
-                                    <span>Send email for new messages</span>
-                                </label>
-                            </div>
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: flex; align-items: center; gap: 10px;">
-                                    <input type="checkbox" name="notify_review" checked>
-                                    <span>Send email for new reviews</span>
-                                </label>
-                            </div>
-                            
-                            <div style="margin-bottom: 15px;">
-                                <label for="notification_email" style="display: block; margin-bottom: 5px; font-weight: 500;">System Notification Email</label>
-                                <input type="email" name="notification_email" id="notification_email" value="notifications@studyconnect.com" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                            </div>
-                            
-                            <button type="submit" style="background-color: #8672ff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: 500;">Save Settings</button>
-                        </form>
+
+                    <!-- Manage Coin Settings Button -->
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button id="addCoinsManually" style="padding: 12px 20px; background-color: #8672ff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            <i class="fas fa-plus-circle"></i> Add Coins Manually
+                        </button>
                     </div>
-                </div>
-                
-                <!-- Add PHP code to handle create announcement form submission -->
-                <?php
-                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_announcement') {
-                    $title = mysqli_real_escape_string($conn, $_POST['announcement_title']);
-                    $message = mysqli_real_escape_string($conn, $_POST['announcement_message']);
-                    $user_type = mysqli_real_escape_string($conn, $_POST['user_type']);
-                    
-                    // Create system notification for all users or specific user type
-                    if ($user_type === 'all') {
-                        // Get all users
-                        $users_query = "SELECT userid FROM users";
-                        $users_result = mysqli_query($conn, $users_query);
+
+                    <!-- Add Coins Modal -->
+                    <div id="addCoinsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+                        <div style="background: white; border-radius: 10px; padding: 20px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="margin: 0;">Add Coins Manually</h3>
+                                <button id="closeAddCoinsModal" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+                            </div>
+                            
+                            <form method="POST" action="" id="addCoinsForm">
+                                <input type="hidden" name="action" value="add_coins_manually">
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <label for="coin_user_id" style="display: block; margin-bottom: 5px; font-weight: 500;">Select User</label>
+                                    <select name="coin_user_id" id="coin_user_id" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                        <option value="">-- Select User --</option>
+                                        <?php
+                                        $users_query = "SELECT userid, username FROM users ORDER BY username";
+                                        $users_result = mysqli_query($conn, $users_query);
+                                        while ($user = mysqli_fetch_assoc($users_result)) {
+                                            echo "<option value='" . $user['userid'] . "'>" . htmlspecialchars($user['username']) . "</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                </div>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <label for="transaction_type" style="display: block; margin-bottom: 5px; font-weight: 500;">Transaction Type</label>
+                                    <select name="transaction_type" id="transaction_type" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                        <option value="Purchase">Purchase (Add Coins)</option>
+                                        <option value="Usage">Usage (Deduct Coins)</option>
+                                    </select>
+                                </div>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <label for="coins_amount" style="display: block; margin-bottom: 5px; font-weight: 500;">Coins Amount</label>
+                                    <input type="number" name="coins_amount" id="coins_amount" required min="1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                </div>
+                                
+                                <div style="margin-bottom: 15px;">
+                                    <label for="transaction_description" style="display: block; margin-bottom: 5px; font-weight: 500;">Description</label>
+                                    <textarea name="transaction_description" id="transaction_description" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                                </div>
+                                
+                                <button type="submit" style="width: 100%; padding: 12px; background-color: #8672ff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">Add Coins</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <?php
+                    // Handle add coins manually
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_coins_manually') {
+                        $user_id = mysqli_real_escape_string($conn, $_POST['coin_user_id']);
+                        $transaction_type = mysqli_real_escape_string($conn, $_POST['transaction_type']);
+                        $coins_amount = intval($_POST['coins_amount']);
+                        $description = mysqli_real_escape_string($conn, $_POST['transaction_description'] ?? 'Manual adjustment by admin');
                         
-                        while ($user = mysqli_fetch_assoc($users_result)) {
-                            $user_id = $user['userid'];
-                            $insert_query = "INSERT INTO tbl_notifications (userid, title, message, type) 
-                                           VALUES ('$user_id', '$title', '$message', 'system')";
-                            mysqli_query($conn, $insert_query);
-                        }
-                    } else {
-                        // Get users of specific type
-                        $users_query = "SELECT userid FROM users WHERE role = '$user_type'";
-                        $users_result = mysqli_query($conn, $users_query);
+                        // Insert transaction record
+                        $insert_query = "INSERT INTO tbl_coins (userid, transaction_type, coins_amount, description) 
+                                        VALUES ('$user_id', '$transaction_type', $coins_amount, '$description')";
                         
-                        while ($user = mysqli_fetch_assoc($users_result)) {
-                            $user_id = $user['userid'];
-                            $insert_query = "INSERT INTO tbl_notifications (userid, title, message, type) 
-                                           VALUES ('$user_id', '$title', '$message', 'system')";
-                            mysqli_query($conn, $insert_query);
+                        if (mysqli_query($conn, $insert_query)) {
+                            // Update user's coin wallet
+                            // First check if user has a wallet
+                            $wallet_check = "SELECT * FROM tbl_coinwallet WHERE userid = '$user_id'";
+                            $wallet_result = mysqli_query($conn, $wallet_check);
+                            
+                            if (mysqli_num_rows($wallet_result) > 0) {
+                                // Update existing wallet
+                                if ($transaction_type == 'Purchase') {
+                                    $update_wallet = "UPDATE tbl_coinwallet SET coin_balance = coin_balance + $coins_amount WHERE userid = '$user_id'";
+                                } else {
+                                    $update_wallet = "UPDATE tbl_coinwallet SET coin_balance = GREATEST(0, coin_balance - $coins_amount) WHERE userid = '$user_id'";
+                                }
+                                mysqli_query($conn, $update_wallet);
+                            } else {
+                                // Create new wallet
+                                $balance = $transaction_type == 'Purchase' ? $coins_amount : 0;
+                                $create_wallet = "INSERT INTO tbl_coinwallet (userid, coin_balance) VALUES ('$user_id', $balance)";
+                                mysqli_query($conn, $create_wallet);
+                            }
+                            
+                            $_SESSION['message'] = "Coins " . ($transaction_type == 'Purchase' ? "added to" : "deducted from") . " user successfully!";
+                            $_SESSION['message_type'] = "success";
+                        } else {
+                            $_SESSION['message'] = "Error updating coins: " . mysqli_error($conn);
+                            $_SESSION['message_type'] = "error";
                         }
+                        
+                        $_SESSION['active_view'] = 'coins';
+                        header("Location: " . $_SERVER['PHP_SELF'] . "?view=coins");
+                        exit();
                     }
+                    ?>
+
+                    <script>
+                    // Modal for adding coins
+                    document.getElementById('addCoinsManually').addEventListener('click', function() {
+                        document.getElementById('addCoinsModal').style.display = 'flex';
+                    });
                     
-                    $_SESSION['message'] = "Announcement sent successfully!";
-                    $_SESSION['message_type'] = "success";
-                    $_SESSION['active_view'] = 'content';
+                    document.getElementById('closeAddCoinsModal').addEventListener('click', function() {
+                        document.getElementById('addCoinsModal').style.display = 'none';
+                    });
                     
-                    header("Location: " . $_SERVER['PHP_SELF']);
-                    exit();
-                }
-                ?>
+                    // Close modal when clicking outside
+                    document.getElementById('addCoinsModal').addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            this.style.display = 'none';
+                        }
+                    });
+                    
+                    // Reset filters button
+                    document.getElementById('resetFilters').addEventListener('click', function() {
+                        window.location.href = '<?php echo $_SERVER['PHP_SELF']; ?>?view=coins';
+                    });
+                    </script>
+                </div>
 
             </div>
         </div>
@@ -1218,5 +1452,4 @@ button {
 </style>
 
 </body>
-</html>
 </html>

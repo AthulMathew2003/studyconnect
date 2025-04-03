@@ -57,6 +57,42 @@ try {
     
     // Commit transaction
     $conn->commit();
+    
+    // Add notification for the tutor
+    include_once 'notification_helper.php';
+    
+    // Get tutor's userid from tutor_id
+    $tutor_query = $conn->prepare("SELECT userid FROM tbl_tutors WHERE tutor_id = ?");
+    $tutor_query->bind_param("i", $tutor_id);
+    $tutor_query->execute();
+    $tutor_result = $tutor_query->get_result();
+    $tutor_data = $tutor_result->fetch_assoc();
+    $tutor_userid = $tutor_data['userid'];
+    
+    // Get student name
+    $student_query = $conn->prepare("
+        SELECT u.username 
+        FROM users u
+        JOIN tbl_student s ON u.userid = s.userid
+        WHERE s.student_id = ?
+    ");
+    $student_query->bind_param("i", $student_id);
+    $student_query->execute();
+    $student_result = $student_query->get_result();
+    $student_data = $student_result->fetch_assoc();
+    $student_name = $student_data['username'];
+    
+    // Create notification for tutor
+    $title = "New Request";
+    $message = "$student_name has sent you a tutoring request for $description";
+    
+    // Get the tutorrequest_id for reference
+    $request_id_query = $conn->query("SELECT LAST_INSERT_ID() as request_id");
+    $request_data = $request_id_query->fetch_assoc();
+    $request_id = $request_data['request_id'];
+    
+    addNotification($conn, $tutor_userid, $title, $message, "request", $request_id);
+    
     echo json_encode(['success' => true, 'message' => 'Request sent successfully! 50 coins deducted from your wallet.']);
     
 } catch (Exception $e) {

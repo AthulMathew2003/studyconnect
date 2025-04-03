@@ -26,25 +26,7 @@ $_SESSION['back_view'] = 'studentdashboard.php';
 if (isset($_SESSION['userid'])) {
     $userid = $_SESSION['userid'];
     
-    // Insert test notifications
-    $types = ['request', 'response', 'message', 'system'];
-    
-    for ($i = 0; $i < 5; $i++) {
-        $title = "Test Notification " . ($i + 1);
-        $message = "This is a test notification message #" . ($i + 1);
-        $type = $types[array_rand($types)];
-        $is_read = $i > 2 ? 1 : 0; // First 3 unread, rest read
-        
-        $query = $conn->prepare("
-            INSERT INTO tbl_notifications (userid, title, message, type, is_read)
-            VALUES (?, ?, ?, ?, ?)
-        ");
-        
-        $query->bind_param("isssi", $userid, $title, $message, $type, $is_read);
-        $query->execute();
-    }
-    
-    
+    // Test notification insertion code removed - was creating test notifications on every page load
 }
 ?>
 
@@ -4740,8 +4722,8 @@ if (isset($_SESSION['userid'])) {
     </style>
     
     <script>
+    // Coin wallet dropdown functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Coin wallet dropdown functionality
         const coinWallet = document.querySelector('.coin-wallet');
         const coinsDropdown = document.querySelector('.coins-dropdown');
         
@@ -4760,184 +4742,6 @@ if (isset($_SESSION['userid'])) {
                 }
             });
         }
-
-        // Notification functionality
-        const notificationIcon = document.getElementById('notificationIcon');
-        const notificationDropdown = document.getElementById('notificationDropdown');
-        const notificationCount = document.getElementById('notification-count');
-        const notificationList = document.getElementById('notificationList');
-        const markAllReadBtn = document.getElementById('markAllRead');
-
-        // Toggle notification dropdown
-        if (notificationIcon && notificationDropdown) {
-            notificationIcon.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const isVisible = notificationDropdown.style.display === 'block';
-                notificationDropdown.style.display = isVisible ? 'none' : 'block';
-                
-                if (!isVisible) {
-                    fetchNotifications();
-                }
-            });
-            
-            // Close notification dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!notificationIcon.contains(e.target) && !notificationDropdown.contains(e.target)) {
-                    notificationDropdown.style.display = 'none';
-                }
-            });
-        }
-
-        // Mark all notifications as read
-        if (markAllReadBtn) {
-            markAllReadBtn.addEventListener('click', function() {
-                markAllNotificationsAsRead();
-            });
-        }
-
-        // Function to fetch notifications
-        function fetchNotifications() {
-            fetch('get_notifications.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        notificationList.innerHTML = `<div style="padding: 20px; text-align: center;">${data.error}</div>`;
-                        return;
-                    }
-                    
-                    // Update notification count
-                    if (data.unread_count > 0) {
-                        notificationCount.textContent = data.unread_count;
-                        notificationCount.style.display = 'flex';
-                    } else {
-                        notificationCount.style.display = 'none';
-                    }
-                    
-                    // Display notifications
-                    if (data.notifications.length === 0) {
-                        notificationList.innerHTML = '<div style="padding: 20px; text-align: center;">No notifications</div>';
-                    } else {
-                        let html = '';
-                        data.notifications.forEach(notification => {
-                            html += `
-                                <div class="notification-item" data-id="${notification.id}" style="padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; ${notification.is_read ? '' : 'background-color: #f7f7ff;'}">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                        <h4 style="margin: 0; font-size: 14px;">${notification.title}</h4>
-                                        <small style="color: #777;">${formatTimeAgo(new Date(notification.created_at))}</small>
-                                    </div>
-                                    <p style="margin: 0; font-size: 13px; color: #666;">${notification.message}</p>
-                                </div>
-                            `;
-                        });
-                        notificationList.innerHTML = html;
-                        
-                        // Add click event to mark notifications as read
-                        document.querySelectorAll('.notification-item').forEach(item => {
-                            item.addEventListener('click', function() {
-                                const notificationId = this.getAttribute('data-id');
-                                markNotificationAsRead(notificationId, this);
-                            });
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching notifications:', error);
-                    notificationList.innerHTML = '<div style="padding: 20px; text-align: center;">Error loading notifications</div>';
-                });
-        }
-        
-        // Mark single notification as read
-        function markNotificationAsRead(notificationId, element) {
-            const formData = new FormData();
-            formData.append('notification_id', notificationId);
-            
-            fetch('mark_notification_read.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    element.style.backgroundColor = '';
-                    
-                    // Update notification count
-                    let currentCount = parseInt(notificationCount.textContent);
-                    if (currentCount > 0) {
-                        currentCount--;
-                        
-                        if (currentCount > 0) {
-                            notificationCount.textContent = currentCount;
-                        } else {
-                            notificationCount.style.display = 'none';
-                        }
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error marking notification as read:', error);
-            });
-        }
-        
-        // Mark all notifications as read
-        function markAllNotificationsAsRead() {
-            fetch('mark_notification_read.php', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update UI
-                    document.querySelectorAll('.notification-item').forEach(item => {
-                        item.style.backgroundColor = '';
-                    });
-                    
-                    // Hide notification count
-                    notificationCount.style.display = 'none';
-                }
-            })
-            .catch(error => {
-                console.error('Error marking all notifications as read:', error);
-            });
-        }
-        
-        // Helper function to format time ago
-        function formatTimeAgo(date) {
-            const now = new Date();
-            const seconds = Math.floor((now - date) / 1000);
-            
-            let interval = Math.floor(seconds / 31536000);
-            if (interval >= 1) {
-                return interval + " year" + (interval === 1 ? "" : "s") + " ago";
-            }
-            
-            interval = Math.floor(seconds / 2592000);
-            if (interval >= 1) {
-                return interval + " month" + (interval === 1 ? "" : "s") + " ago";
-            }
-            
-            interval = Math.floor(seconds / 86400);
-            if (interval >= 1) {
-                return interval + " day" + (interval === 1 ? "" : "s") + " ago";
-            }
-            
-            interval = Math.floor(seconds / 3600);
-            if (interval >= 1) {
-                return interval + " hour" + (interval === 1 ? "" : "s") + " ago";
-            }
-            
-            interval = Math.floor(seconds / 60);
-            if (interval >= 1) {
-                return interval + " minute" + (interval === 1 ? "" : "s") + " ago";
-            }
-            
-            return "Just now";
-        }
-
-        // Fetch notifications on page load
-        fetchNotifications();
-        
-        // Periodically check for new notifications
-        setInterval(fetchNotifications, 60000); // Check every minute
     });
     </script>
 </body>

@@ -51,6 +51,14 @@ $profile_result = $profile_query->get_result();
 $profile_data = $profile_result->fetch_assoc();
 $profile_photo = ($profile_data && $profile_data['profile_photo']) ? 'uploads/profile_photos/' . $profile_data['profile_photo'] : 'uploads/profile_photos/profile_67d9a866e1dc7.png'; // Default image
 $profile_query->close();
+
+// Get any session messages
+$success_message = $_SESSION['success_message'] ?? null;
+$error_message = $_SESSION['error_message'] ?? null;
+
+// Clear the messages from the session to prevent showing them again on refresh
+unset($_SESSION['success_message']);
+unset($_SESSION['error_message']);
 ?>
 
 <!DOCTYPE html>
@@ -1807,6 +1815,21 @@ $profile_query->close();
     </style>
   </head>
   <body>
+    <!-- Success and Error message display -->
+    <?php if ($success_message): ?>
+    <div class="system-message success-message" style="position: fixed; top: 20px; right: 20px; padding: 15px; background-color: #4CAF50; color: white; border-radius: 5px; z-index: 9999; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <span class="close-message" style="position: absolute; right: 10px; top: 5px; cursor: pointer;">&times;</span>
+        <?php echo htmlspecialchars($success_message); ?>
+    </div>
+    <?php endif; ?>
+    
+    <?php if ($error_message): ?>
+    <div class="system-message error-message" style="position: fixed; top: 20px; right: 20px; padding: 15px; background-color: #f44336; color: white; border-radius: 5px; z-index: 9999; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <span class="close-message" style="position: absolute; right: 10px; top: 5px; cursor: pointer;">&times;</span>
+        <?php echo htmlspecialchars($error_message); ?>
+    </div>
+    <?php endif; ?>
+    
     <div class="dashboard-container">
       <nav class="sidebar">
         <div class="sidebar-logo">StudyConnect</div>
@@ -1826,9 +1849,7 @@ $profile_query->close();
           <a href="#" class="nav-link" onclick="showContent('tutoring-requests')">
             <i class="fas fa-bell"></i> Tutoring Requests
           </a>
-          <a href="#" class="nav-link" onclick="showContent('settings')">
-            <i class="fas fa-cog"></i> Settings
-          </a>
+          
         </div>
       </nav>
 
@@ -2501,39 +2522,7 @@ $profile_query->close();
           </div>
         </div>
         
-        <div id="settings-content" class="content-section">
-          <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h2 style="margin-bottom: 2rem; color: var(--accent-color);">Settings</h2>
-            
-            <div style="margin-bottom: 2rem;">
-              <h3 style="margin-bottom: 1rem;">Profile Settings</h3>
-              <div style="display: grid; gap: 1rem;">
-                <div>
-                  <label style="display: block; margin-bottom: 0.5rem;">Display Name</label>
-                  <input type="text" value="<?php echo htmlspecialchars($_SESSION['username']); ?>" style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
-                </div>
-                <div>
-                  <label style="display: block; margin-bottom: 0.5rem;">Email</label>
-                  <input type="email" value="user@example.com" style="width: 100%; padding: 0.8rem; border: 1px solid var(--input-color); border-radius: 8px;">
-                </div>
-              </div>
-            </div>
-            
-            <div style="margin-bottom: 2rem;">
-              <h3 style="margin-bottom: 1rem;">Notification Settings</h3>
-              <div style="display: grid; gap: 0.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                  <input type="checkbox" checked> Email notifications for new messages
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                  <input type="checkbox" checked> Email notifications for new student requests
-                </label>
-              </div>
-            </div>
-            
-            <button style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 8px; cursor: pointer;">Save Changes</button>
-          </div>
-        </div>
+       
 
         <div id="tutoring-requests-content" class="content-section">
           <div style="max-width: 800px; margin: 2rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -3307,28 +3296,24 @@ $profile_query->close();
       const notificationCount = document.getElementById('notification-count');
       
       // Toggle notification popup when bell is clicked
-      if (notificationBell) {
-        notificationBell.addEventListener('click', function(e) {
-          e.stopPropagation();
-          if (notificationPopup.style.display === 'block') {
-            notificationPopup.style.display = 'none';
-          } else {
-            notificationPopup.style.display = 'block';
-            loadNotifications();
-          }
-        });
-      }
+      notificationBell.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (notificationPopup.style.display === 'block') {
+          notificationPopup.style.display = 'none';
+        } else {
+          notificationPopup.style.display = 'block';
+          loadNotifications();
+        }
+      });
       
       // Close notification popup when X is clicked
-      if (closeNotification) {
-        closeNotification.addEventListener('click', function() {
-          notificationPopup.style.display = 'none';
-        });
-      }
+      closeNotification.addEventListener('click', function() {
+        notificationPopup.style.display = 'none';
+      });
       
       // Close notification popup when clicking outside
       document.addEventListener('click', function(e) {
-        if (notificationPopup && notificationPopup.style.display === 'block' && 
+        if (notificationPopup.style.display === 'block' && 
             !notificationPopup.contains(e.target) && 
             e.target !== notificationBell) {
           notificationPopup.style.display = 'none';
@@ -3336,33 +3321,27 @@ $profile_query->close();
       });
       
       // Mark all notifications as read
-      if (markAllReadBtn) {
-        markAllReadBtn.addEventListener('click', function() {
-          fetch('mark_notification_read.php', {
-            method: 'POST'
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              // Reload notifications
-              loadNotifications();
-              
-              // Hide notification count
-              if (notificationCount) {
-                notificationCount.style.display = 'none';
-              }
-            }
-          })
-          .catch(error => {
-            console.error('Error marking all notifications as read:', error);
-          });
+      markAllReadBtn.addEventListener('click', function() {
+        fetch('mark_notification_read.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Reload notifications
+            loadNotifications();
+          }
+        })
+        .catch(error => {
+          console.error('Error marking all notifications as read:', error);
         });
-      }
+      });
       
       // Function to load notifications
       function loadNotifications() {
-        if (!notificationList) return;
-        
         notificationList.innerHTML = '<div class="notification-loading">Loading notifications...</div>';
         
         fetch('get_notifications.php')
@@ -3371,17 +3350,24 @@ $profile_query->close();
             if (!response.ok) {
               throw new Error('Network response was not ok');
             }
-            return response.json();
+            return response.text(); // Get as text first to debug
+          })
+          .then(text => {
+            // Try to parse the JSON, and if it fails, show the raw response for debugging
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              console.error('Invalid JSON response:', text);
+              throw new Error('Invalid JSON response from server');
+            }
           })
           .then(data => {
             // Update notification count
-            if (notificationCount) {
-              if (data.unread_count > 0) {
-                notificationCount.style.display = 'flex';
-                notificationCount.textContent = data.unread_count;
-              } else {
-                notificationCount.style.display = 'none';
-              }
+            if (data.unread_count > 0) {
+              notificationCount.style.display = 'flex';
+              notificationCount.textContent = data.unread_count;
+            } else {
+              notificationCount.style.display = 'none';
             }
             
             // Update notification list
@@ -3424,12 +3410,12 @@ $profile_query->close();
       
       // Function to mark notification as read
       function markNotificationAsRead(notificationId) {
-        const formData = new FormData();
-        formData.append('notification_id', notificationId);
-        
         fetch('mark_notification_read.php', {
           method: 'POST',
-          body: formData
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: `notification_id=${notificationId}`
         })
         .then(response => response.json())
         .then(data => {
@@ -3476,12 +3462,10 @@ $profile_query->close();
       }
       
       // Check for notifications on page load
-      if (notificationBell && notificationCount) {
-        loadNotifications();
-        
-        // Check for new notifications every minute
-        setInterval(loadNotifications, 60000);
-      }
+      loadNotifications();
+      
+      // Check for new notifications every minute
+      setInterval(loadNotifications, 60000);
     });
 
     // Add this to your existing JavaScript
@@ -3556,62 +3540,130 @@ $profile_query->close();
 </div>
 
 <?php
-// After successfully accepting a request
-include_once 'notification_helper.php';
-
-// Get tutor info
-$tutor_query = $conn->prepare("SELECT t.userid, u.username FROM tbl_tutors t JOIN users u ON t.userid = u.userid WHERE t.tutor_id = ?");
-$tutor_query->bind_param("i", $tutor_id);
-$tutor_query->execute();
-$tutor_result = $tutor_query->get_result();
-$tutor_data = $tutor_result->fetch_assoc();
-$tutor_userid = $tutor_data['userid'];
-$tutor_name = $tutor_data['username'];
-
-// Get student name
-$student_query = $conn->prepare("
-    SELECT u.username 
-    FROM users u
-    JOIN tbl_student s ON u.userid = s.userid
-    WHERE s.student_id = ?
-");
-$student_query->bind_param("i", $student_id);
-$student_query->execute();
-$student_result = $student_query->get_result();
-$student_data = $student_result->fetch_assoc();
-$student_name = $student_data['username'];
-
-// Create notification for tutor
-$title = "Request Accepted";
-$message = "$student_name has accepted your tutoring request";
-addNotification($conn, $tutor_userid, $title, $message, "response", $request_id);
-
-// After successfully creating a request
-include 'notification_helper.php';
-
-// Get tutor's userid from tutor_id
-$tutor_query = $conn->prepare("SELECT userid FROM tbl_tutors WHERE tutor_id = ?");
-$tutor_query->bind_param("i", $tutor_id);
-$tutor_query->execute();
-$tutor_result = $tutor_query->get_result();
-$tutor_data = $tutor_result->fetch_assoc();
-$tutor_userid = $tutor_data['userid'];
-
-// Get student name
-$student_query = $conn->prepare("
-    SELECT u.username 
-    FROM users u
-    JOIN tbl_student s ON u.userid = s.userid
-    WHERE s.student_id = ?
-");
-$student_query->bind_param("i", $student_id);
-$student_query->execute();
-$student_result = $student_query->get_result();
-$student_data = $student_result->fetch_assoc();
-$student_name = $student_data['username'];
-
-// Create notification for tutor
-$title = "New Request";
-$message = "$student_name has sent you a tutoring request for $subject";
-addNotification($conn, $tutor_userid, $title, $message, "request", $request_id);
+// Notification code removed - these notifications are now handled in appropriate action handlers
 ?>
+
+<script>
+    // Auto-hide system messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const systemMessages = document.querySelectorAll('.system-message');
+        
+        if (systemMessages) {
+            systemMessages.forEach(message => {
+                // Auto hide after 5 seconds
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => {
+                        message.style.display = 'none';
+                    }, 500);
+                }, 5000);
+                
+                // Allow manual close
+                const closeBtn = message.querySelector('.close-message');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        message.style.opacity = '0';
+                        setTimeout(() => {
+                            message.style.display = 'none';
+                        }, 500);
+                    });
+                }
+            });
+        }
+    });
+</script>
+
+<!-- Modify the updateRequestStatus function -->
+<script>
+    // Override the original updateRequestStatus function
+    function updateRequestStatus(requestId, status) {
+        if (status === 'approved') {
+            // Show confirmation modal
+            const modal = document.querySelector('.accept-request-modal');
+            modal.style.display = 'flex';
+            modal.dataset.requestId = requestId;
+        } else {
+            if (confirm('Are you sure you want to reject this request?')) {
+                // Direct update for rejection
+                fetch('update_request_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `request_id=${requestId}&status=rejected`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Use window.location.href instead of location.reload()
+                        window.location.href = 'teacherdashboard.php?section=tutoring-requests&updated=' + new Date().getTime();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to update request status'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating request status');
+                });
+            }
+        }
+    }
+
+    // Override the original confirmAcceptRequest function
+    function confirmAcceptRequest() {
+        const modal = document.querySelector('.accept-request-modal');
+        const requestId = modal.dataset.requestId;
+        
+        fetch('update_request_status.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `request_id=${requestId}&status=approved&deduct_coins=50`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update all coin balance displays
+                const coinAmountElements = document.querySelectorAll('.coin-amount');
+                coinAmountElements.forEach(element => {
+                    element.textContent = data.new_balance;
+                });
+                
+                closeAcceptModal();
+                // Use window.location.href instead of location.reload()
+                window.location.href = 'teacherdashboard.php?section=tutoring-requests&updated=' + new Date().getTime();
+            } else {
+                closeAcceptModal();
+                
+                // Show error in insufficient coins modal
+                const insufficientModal = document.querySelector('.insufficient-coins-modal');
+                const messageDiv = document.getElementById('insufficient-coins-message');
+                
+                if (data.message === 'Insufficient coins') {
+                    messageDiv.innerHTML = `
+                        <p>You need at least 50 coins to accept this request.</p>
+                        <p style="margin: 1rem 0;">Your current balance: <span class="coin-amount">${data.current_balance}</span> coins</p>
+                        <button onclick="window.location.href='buy_coins.php'" style="background: var(--accent-color); color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; cursor: pointer; margin-bottom: 1rem;">
+                            Buy Coins
+                        </button>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <p>Error: ${data.message}</p>
+                        <p style="margin: 1rem 0;">Please try again later.</p>
+                    `;
+                }
+                
+                insufficientModal.style.display = 'flex';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating request status');
+            closeAcceptModal();
+        });
+    }
+</script>
