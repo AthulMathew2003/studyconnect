@@ -954,7 +954,7 @@ if (isset($_SESSION['userid'])) {
                         <div class="chat-list">
                             <div class="chat-list-header">
                                 <div class="user-profile">
-                                    <img src="1.webp" alt="Profile" class="profile-img">
+                                    
                                     <div class="user-info">
                                         <h3><?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Student'; ?></h3>
                                         <span class="status">Online</span>

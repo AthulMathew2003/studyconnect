@@ -214,10 +214,7 @@ if (isset($_POST['delete_user'])) {
                     <h1>Dashboard</h1>
                 </div>
                 <div class="navbar-right">
-                    <div class="notifications">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
+                   
                     <div class="profile-section" id="profile-dropdown-trigger">
                         <svg class="profile-icon" viewBox="0 0 24 24" width="40" height="40">
                             <path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -251,18 +248,7 @@ if (isset($_POST['delete_user'])) {
                             echo htmlspecialchars($data['total']);
                         ?></p>
                     </div>
-                    <div class="stat-card">
-                        <h3>Active Studies</h3>
-                        <p>42</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Pending Invites</h3>
-                        <p>18</p>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Monthly Growth</h3>
-                        <p>+12%</p>
-                    </div>
+                   
                 </div>
 
                 <!-- Users View -->

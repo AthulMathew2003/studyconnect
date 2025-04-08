@@ -1933,8 +1933,7 @@ unset($_SESSION['error_message']);
                   Balance: <span class="coin-amount"><?php echo htmlspecialchars($coin_balance); ?> coins</span>
                 </div>
                 <a href="buy_coins.php">Buy Coins</a>
-                <a href="#">Previous Transactions</a>
-                <a href="#">Coin History</a>
+                
               </div>
             </div>
             <div class="notification-icon" id="notification-bell">
@@ -2259,7 +2258,7 @@ unset($_SESSION['error_message']);
               <div class="chat-list">
                 <div class="chat-list-header">
                   <div class="user-profile">
-                    <img src="1.webp" alt="Profile" class="profile-img">
+                    
                     <div class="user-info">
                       <h3><?php echo htmlspecialchars($_SESSION['username']); ?></h3>
                       <span class="status">Online</span>
