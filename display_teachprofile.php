@@ -378,7 +378,7 @@ $subjectsJson = json_encode($subjects);
         <header>
             <h1>Tutor Profile</h1>
             <div id="save-controls">
-                <a href="teacherdashboard.php" id="back-button" class="btn">
+                <a href="studentdashboard.php" id="back-button" class="btn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                     </svg>
