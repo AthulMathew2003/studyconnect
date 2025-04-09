@@ -1,16 +1,14 @@
-FROM php:8.1-apache
+# Use an official Python image as a base
+FROM python:3.11-slim
 
-# Enable required PHP extensions
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Set the working directory
+WORKDIR /app
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Copy the contents of the current directory to /app
+COPY . .
 
-# Copy app files into container
-COPY . /var/www/html/
+# Install dependencies (if there's a requirements.txt file)
+RUN pip install --no-cache-dir -r requirements.txt || true
 
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html
-
-# Expose port 80
-EXPOSE 80
+# Set the command to run your app (adjust if needed)
+CMD ["python", "main.py"]
