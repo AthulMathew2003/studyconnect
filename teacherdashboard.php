@@ -2556,7 +2556,7 @@ unset($_SESSION['error_message']);
                         <span style="color: #666; font-size: 0.9rem;"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></span>
                       </div>
                       <p style="color: #666; margin-bottom: 0.5rem;"><?php echo htmlspecialchars($row['description']); ?></p>
-                      <p style="color: #666; margin-bottom: 0.5rem;">Fee Rate: $<?php echo htmlspecialchars($row['feerate']); ?>/hour</p>
+                      <p style="color: #666; margin-bottom: 0.5rem;">Fee Rate: 121/hour</p>
                       <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                         <button onclick="updateRequestStatus(<?php echo $row['tutorrequestid']; ?>, 'approved')" 
                                 style="background: var(--accent-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">

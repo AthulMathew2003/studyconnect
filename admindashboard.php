@@ -971,7 +971,7 @@ if (isset($_POST['delete_user'])) {
                                     <select name="transaction_type" id="transaction_type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
                                         <option value="">All Types</option>
                                         <option value="Purchase" <?php echo isset($_GET['transaction_type']) && $_GET['transaction_type'] == 'Purchase' ? 'selected' : ''; ?>>Purchase</option>
-                                        <option value="Usage" <?php echo isset($_GET['transaction_type']) && $_GET['transaction_type'] == 'Usage' ? 'selected' : ''; ?>>Usage</option>
+                                        <!-- <option value="Usage" <?php echo isset($_GET['transaction_type']) && $_GET['transaction_type'] == 'Usage' ? 'selected' : ''; ?>>Usage</option> -->
                                     </select>
                                 </div>
                                 <div>
@@ -1062,10 +1062,10 @@ if (isset($_POST['delete_user'])) {
                             <div style="font-size: 32px; font-weight: bold; color: #4caf50; margin-top: 10px;"><?php echo number_format($total_purchased); ?></div>
                         </div>
 
-                        <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <!-- <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                             <h3>Total Coins Used</h3>
                             <div style="font-size: 32px; font-weight: bold; color: #f44336; margin-top: 10px;"><?php echo number_format($total_used); ?></div>
-                        </div>
+                        </div> -->
 
                         <div class="stat-box" style="background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                             <h3>Net Coin Balance</h3>
@@ -1199,11 +1199,11 @@ if (isset($_POST['delete_user'])) {
                     </div>
 
                     <!-- Manage Coin Settings Button -->
-                    <div style="margin-top: 20px; text-align: center;">
+                    <!-- <div style="margin-top: 20px; text-align: center;">
                         <button id="addCoinsManually" style="padding: 12px 20px; background-color: #8672ff; color: white; border: none; border-radius: 5px; cursor: pointer;">
                             <i class="fas fa-plus-circle"></i> Add Coins Manually
                         </button>
-                    </div>
+                    </div> -->
 
                     <!-- Add Coins Modal -->
                     <div id="addCoinsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
